@@ -9,6 +9,8 @@ coverage/
 # Production
 build/
 dist/
+.next/
+out/
 
 # Misc
 .DS_Store
@@ -17,6 +19,8 @@ dist/
 .env.development.local
 .env.test.local
 .env.production.local
+next-env.d.ts
+nul
 
 # Logs
 npm-debug.log*

@@ -1,0 +1,200 @@
+// This is your Prisma schema file for the AI-Powered Kanban application
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model (managed by Supabase Auth, but we reference it)
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String?
+  avatarUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  projects          Project[]
+  columns           Column[]
+  tags              Tag[]
+  aiRecommendations AIRecommendation[]
+
+  @@map("users")
+}
+
+// Project: Top-level container
+model Project {
+  id          String        @id @default(uuid())
+  userId      String
+  name        String
+  description String?
+  status      ProjectStatus @default(ACTIVE)
+  sortOrder   Int           @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  archivedAt  DateTime?
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  milestones Milestone[]
+
+  @@index([userId, status])
+  @@index([userId, sortOrder])
+  @@map("projects")
+}
+
+enum ProjectStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+// Milestone: Major deliverables within a project
+model Milestone {
+  id                   String    @id @default(uuid())
+  projectId            String
+  name                 String
+  description          String?
+  value                Priority  @default(MEDIUM)
+  urgency              Priority  @default(MEDIUM)
+  effort               Effort    @default(MEDIUM)
+  statusColumnId       String
+  priorityScore        Float?
+  dependsOnMilestoneId String?
+  sortOrder            Int       @default(0)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  project            Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  statusColumn       Column      @relation("MilestoneColumn", fields: [statusColumnId], references: [id])
+  dependsOnMilestone Milestone?  @relation("MilestoneDependency", fields: [dependsOnMilestoneId], references: [id], onDelete: SetNull)
+  blockedMilestones  Milestone[] @relation("MilestoneDependency")
+  tasks              Task[]
+
+  @@index([projectId, statusColumnId])
+  @@index([statusColumnId, sortOrder])
+  @@index([priorityScore])
+  @@map("milestones")
+}
+
+// Task: Atomic work units (subtasks)
+model Task {
+  id              String    @id @default(uuid())
+  milestoneId     String
+  name            String
+  description     String?
+  value           Priority  @default(MEDIUM)
+  urgency         Priority  @default(MEDIUM)
+  effort          Effort    @default(SMALL)
+  statusColumnId  String
+  priorityScore   Float?
+  dependsOnTaskId String?
+  completedAt     DateTime?
+  sortOrder       Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  milestone     Milestone @relation(fields: [milestoneId], references: [id], onDelete: Cascade)
+  statusColumn  Column    @relation("TaskColumn", fields: [statusColumnId], references: [id])
+  dependsOnTask Task?     @relation("TaskDependency", fields: [dependsOnTaskId], references: [id], onDelete: SetNull)
+  blockedTasks  Task[]    @relation("TaskDependency")
+  tags          TaskTag[]
+
+  @@index([milestoneId, statusColumnId])
+  @@index([statusColumnId, sortOrder])
+  @@index([priorityScore])
+  @@index([completedAt])
+  @@map("tasks")
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum Effort {
+  SMALL
+  MEDIUM
+  LARGE
+}
+
+// Column: Kanban board columns
+model Column {
+  id        String    @id @default(uuid())
+  userId    String
+  name      String
+  key       ColumnKey @unique
+  sortOrder Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  milestones Milestone[] @relation("MilestoneColumn")
+  tasks      Task[]      @relation("TaskColumn")
+
+  @@index([userId, sortOrder])
+  @@map("columns")
+}
+
+enum ColumnKey {
+  PROJECTS
+  BACKLOG
+  WORKING
+  READY_TEST
+  AGENT_TESTING
+  DEPLOYED_TESTING
+  COMPLETED
+}
+
+// Tag: Labels for categorization
+model Tag {
+  id        String   @id @default(uuid())
+  userId    String
+  name      String
+  color     String   @default("#3b82f6")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  taskTags TaskTag[]
+
+  @@unique([userId, name])
+  @@index([userId])
+  @@map("tags")
+}
+
+// TaskTag: Many-to-many relationship between tasks and tags
+model TaskTag {
+  taskId    String
+  tagId     String
+  createdAt DateTime @default(now())
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, tagId])
+  @@index([tagId])
+  @@map("task_tags")
+}
+
+// AIRecommendation: Audit log for AI analysis
+model AIRecommendation {
+  id             String   @id @default(uuid())
+  userId         String
+  inputSnapshot  Json
+  topTasks       Json
+  suggestedMoves Json
+  themes         Json
+  promptVersion  String
+  tokensUsed     Int
+  durationMs     Int
+  createdAt      DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("ai_recommendations")
+}
