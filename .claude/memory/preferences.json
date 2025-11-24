@@ -1,0 +1,42 @@
+{
+  "ai": {
+    "model": "gpt-4-turbo",
+    "max_tokens": 4000,
+    "temperature": 0.7,
+    "cache_ttl_seconds": 3600,
+    "rate_limit_per_hour": 10,
+    "fallback_model": "gpt-4o-mini"
+  },
+  "board": {
+    "default_columns": [
+      "PROJECTS",
+      "BACKLOG",
+      "WORKING",
+      "READY_TEST",
+      "AGENT_TESTING",
+      "DEPLOYED_TESTING",
+      "COMPLETED"
+    ],
+    "auto_prioritize_threshold": 20,
+    "max_tasks_per_column": 50
+  },
+  "development": {
+    "auto_format": true,
+    "strict_types": true,
+    "test_coverage_min": 80,
+    "lint_on_save": true,
+    "auto_commit_progress": false
+  },
+  "deployment": {
+    "auto_deploy_staging": true,
+    "require_tests_pass": true,
+    "require_coverage_threshold": true,
+    "deployment_region": "iad1"
+  },
+  "testing": {
+    "run_e2e_on_pr": true,
+    "playwright_browsers": ["chromium", "firefox"],
+    "coverage_threshold": 80,
+    "accessibility_checks": true
+  }
+}

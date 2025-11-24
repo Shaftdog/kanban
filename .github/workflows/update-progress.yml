@@ -1,0 +1,91 @@
+name: Update Progress
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths-ignore:
+      - 'PROGRESS.md'
+      - 'README.md'
+      - 'docs/**'
+
+  workflow_dispatch:  # Allow manual trigger
+
+permissions:
+  contents: write
+
+jobs:
+  update-progress:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for accurate tracking
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit
+        continue-on-error: true  # Don't fail if package.json doesn't exist yet
+
+      - name: Run progress checker
+        run: |
+          if [ -f "scripts/check-progress.js" ]; then
+            node scripts/check-progress.js
+          else
+            echo "⚠️ Progress checker not found yet"
+          fi
+
+      - name: Check for changes
+        id: check_changes
+        run: |
+          if git diff --quiet PROGRESS.md; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "No changes to PROGRESS.md"
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "PROGRESS.md has been updated"
+          fi
+
+      - name: Commit and push if changed
+        if: steps.check_changes.outputs.changed == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add PROGRESS.md
+          git commit -m "chore: auto-update progress tracker [skip ci]"
+          git push
+
+      - name: Generate progress report comment
+        if: steps.check_changes.outputs.changed == 'true' && github.event_name == 'push'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const progress = fs.readFileSync('PROGRESS.md', 'utf8');
+
+            // Extract overall progress
+            const match = progress.match(/📊 \*\*Overall Progress:\*\* (\d+)% Complete \((\d+)\/(\d+) tasks\)/);
+
+            if (match) {
+              const [, percentage, completed, total] = match;
+
+              const comment = `## 📊 Progress Update
+
+              **Overall Progress:** ${percentage}% Complete (${completed}/${total} tasks)
+
+              Progress tracker has been automatically updated! 🎉
+
+              [View detailed progress →](https://github.com/${{ github.repository }}/blob/main/PROGRESS.md)
+              `;
+
+              console.log('Progress updated:', comment);
+            }

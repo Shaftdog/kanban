@@ -1,0 +1,39 @@
+{
+  "lessons": [],
+  "bestPractices": [
+    {
+      "category": "AI Integration",
+      "lesson": "Always validate AI responses with Zod before using them",
+      "rationale": "AI can return malformed JSON or unexpected values"
+    },
+    {
+      "category": "Supabase RLS",
+      "lesson": "Test RLS policies with multiple users before production",
+      "rationale": "Easy to miss edge cases in policy logic"
+    },
+    {
+      "category": "Drag and Drop",
+      "lesson": "Implement optimistic updates for better UX",
+      "rationale": "Makes interactions feel instant even with network latency"
+    },
+    {
+      "category": "Testing",
+      "lesson": "Write E2E tests for critical user flows first",
+      "rationale": "Catches integration issues that unit tests miss"
+    }
+  ],
+  "commonIssues": [
+    {
+      "issue": "RLS policies blocking valid queries",
+      "solution": "Check that all foreign key relationships include userId checks"
+    },
+    {
+      "issue": "AI token costs higher than expected",
+      "solution": "Implement aggressive caching and use gpt-4o-mini when possible"
+    }
+  ],
+  "metadata": {
+    "lastUpdated": "2025-11-24",
+    "projectPhase": "Phase 0"
+  }
+}

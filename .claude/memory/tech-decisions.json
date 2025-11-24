@@ -1,0 +1,51 @@
+{
+  "decisions": [
+    {
+      "decision": "Use Supabase instead of separate PostgreSQL + NextAuth",
+      "rationale": "All-in-one solution simplifies auth, database, and RLS in one service",
+      "alternatives": ["NextAuth + separate PostgreSQL", "Clerk + Neon"],
+      "tradeoffs": "Vendor lock-in, but significantly faster development",
+      "date": "2025-11-24"
+    },
+    {
+      "decision": "Use @dnd-kit instead of react-beautiful-dnd",
+      "rationale": "More modern, better accessibility, actively maintained",
+      "alternatives": ["react-beautiful-dnd", "react-dnd"],
+      "tradeoffs": "Slightly more complex API, but better long-term support",
+      "date": "2025-11-24"
+    },
+    {
+      "decision": "Next.js 15 with App Router",
+      "rationale": "Latest stable version with best performance and features",
+      "alternatives": ["Pages Router", "Remix", "SvelteKit"],
+      "tradeoffs": "Newer patterns to learn, but future-proof",
+      "date": "2025-11-24"
+    },
+    {
+      "decision": "Vercel KV for AI response caching",
+      "rationale": "Fast, integrated with Vercel, simple API",
+      "alternatives": ["Upstash Redis", "In-memory cache"],
+      "tradeoffs": "Another service to manage, but excellent DX",
+      "date": "2025-11-24"
+    },
+    {
+      "decision": "Single-user focus initially",
+      "rationale": "Faster MVP, easier to add multi-user later",
+      "alternatives": ["Multi-user from start"],
+      "tradeoffs": "May need data model refactor later, but simpler RLS policies",
+      "date": "2025-11-24"
+    }
+  ],
+  "pendingDecisions": [
+    {
+      "topic": "Rich text editor choice",
+      "options": ["react-markdown + @uiw/react-md-editor", "Lexical", "Tiptap"],
+      "considerations": "Need markdown support, simple integration, good UX"
+    },
+    {
+      "topic": "Chart library for analytics",
+      "options": ["Recharts", "Chart.js", "Victory"],
+      "considerations": "Bundle size, customization, TypeScript support"
+    }
+  ]
+}
