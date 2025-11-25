@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '@/lib/prisma'
 import { createMilestoneSchema } from '@/lib/validations'
-
-const prisma = new PrismaClient()
 
 // GET /api/milestones?projectId=xxx - List milestones for a project
 export async function GET(request: NextRequest) {

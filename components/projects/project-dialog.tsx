@@ -9,7 +9,7 @@ import { useCreateProject, useUpdateProject } from '@/lib/hooks'
 
 interface ProjectDialogProps {
   open: boolean
-  onOpenChange: (open: boolean) => void
+  onOpenChange: (_open: boolean) => void
   project?: {
     id: string
     name: string

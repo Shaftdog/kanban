@@ -123,7 +123,7 @@ export function useDeleteMilestone() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ id, projectId }: { id: string; projectId: string }): Promise<void> => {
+    mutationFn: async ({ id, projectId: _projectId }: { id: string; projectId: string }): Promise<void> => {
       const response = await fetch(`/api/milestones/${id}`, {
         method: 'DELETE',
       })
@@ -133,9 +133,59 @@ export function useDeleteMilestone() {
         throw new Error(error.error || 'Failed to delete milestone')
       }
     },
-    onSuccess: (_, variables) => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['milestones', variables.projectId] })
       queryClient.invalidateQueries({ queryKey: ['projects', variables.projectId] })
+    },
+  })
+}
+
+// Fetch milestone dependencies
+export function useMilestoneDependencies(milestoneId: string) {
+  return useQuery({
+    queryKey: ['milestone-dependencies', milestoneId],
+    queryFn: async () => {
+      const response = await fetch(`/api/milestones/${milestoneId}/dependencies`)
+      if (!response.ok) {
+        throw new Error('Failed to fetch dependencies')
+      }
+      const json = await response.json()
+      return json.data
+    },
+    enabled: !!milestoneId,
+  })
+}
+
+// Update milestone dependency
+export function useUpdateMilestoneDependency() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      milestoneId,
+      projectId: _projectId,
+      dependsOnMilestoneId,
+    }: {
+      milestoneId: string
+      projectId: string
+      dependsOnMilestoneId: string | null
+    }) => {
+      const response = await fetch(`/api/milestones/${milestoneId}/dependencies`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dependsOnMilestoneId }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to update dependency')
+      }
+
+      return response.json().then((r) => r.data)
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['milestone-dependencies', variables.milestoneId] })
+      queryClient.invalidateQueries({ queryKey: ['milestones'] })
     },
   })
 }

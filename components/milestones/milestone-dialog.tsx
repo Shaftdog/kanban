@@ -10,7 +10,7 @@ import { useCreateMilestone, useUpdateMilestone, useColumns } from '@/lib/hooks'
 
 interface MilestoneDialogProps {
   open: boolean
-  onOpenChange: (open: boolean) => void
+  onOpenChange: (_open: boolean) => void
   projectId: string
   milestone?: {
     id: string

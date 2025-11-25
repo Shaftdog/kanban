@@ -15,6 +15,9 @@ import { useColumns, useUpdateMilestone } from '@/lib/hooks'
 import { KanbanColumn } from './kanban-column'
 import { MilestoneCard } from './milestone-card'
 import { BoardFilters, FilterState } from './board-filters'
+import { AIButton } from '../ai/ai-button'
+import { AIPanel } from '../ai/ai-panel'
+import { ItemDetailModal } from './item-detail-modal'
 
 interface KanbanBoardProps {
   projectId?: string | null
@@ -22,8 +25,11 @@ interface KanbanBoardProps {
 
 export function KanbanBoard({ projectId }: KanbanBoardProps) {
   const { data: columns, isLoading, error } = useColumns()
-  const [selectedProject, setSelectedProject] = useState<string | null>(projectId || null)
+  const [selectedProject, _setSelectedProject] = useState<string | null>(projectId || null)
   const [activeMilestone, setActiveMilestone] = useState<any>(null)
+  const [isAIPanelOpen, setIsAIPanelOpen] = useState(false)
+  const [selectedMilestone, setSelectedMilestone] = useState<any>(null)
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false)
   const [filters, setFilters] = useState<FilterState>({
     search: '',
     projectIds: [],
@@ -33,6 +39,11 @@ export function KanbanBoard({ projectId }: KanbanBoardProps) {
     itemType: 'all',
   })
   const updateMilestone = useUpdateMilestone()
+
+  const handleMilestoneClick = (milestone: any) => {
+    setSelectedMilestone(milestone)
+    setIsDetailModalOpen(true)
+  }
 
   // Set up sensors for drag detection
   const sensors = useSensors(
@@ -138,13 +149,16 @@ export function KanbanBoard({ projectId }: KanbanBoardProps) {
     >
       <div className="h-full flex flex-col">
         {/* Board Header */}
-        <div className="mb-4">
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
-            Kanban Board
-          </h1>
-          <p className="text-slate-600 dark:text-slate-400">
-            Drag and drop milestones and tasks to update their status
-          </p>
+        <div className="mb-4 flex items-start justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
+              Kanban Board
+            </h1>
+            <p className="text-slate-600 dark:text-slate-400">
+              Drag and drop milestones and tasks to update their status
+            </p>
+          </div>
+          <AIButton onClick={() => setIsAIPanelOpen(true)} />
         </div>
 
         {/* Filters */}
@@ -159,6 +173,7 @@ export function KanbanBoard({ projectId }: KanbanBoardProps) {
                 column={column}
                 projectId={selectedProject}
                 filters={filters}
+                onMilestoneClick={handleMilestoneClick}
               />
             ))}
           </div>
@@ -173,6 +188,23 @@ export function KanbanBoard({ projectId }: KanbanBoardProps) {
           </div>
         ) : null}
       </DragOverlay>
+
+      {/* AI Panel */}
+      <AIPanel
+        isOpen={isAIPanelOpen}
+        onClose={() => setIsAIPanelOpen(false)}
+        focusProjectId={selectedProject || undefined}
+      />
+
+      {/* Item Detail Modal */}
+      <ItemDetailModal
+        item={selectedMilestone}
+        isOpen={isDetailModalOpen}
+        onClose={() => {
+          setIsDetailModalOpen(false)
+          setSelectedMilestone(null)
+        }}
+      />
     </DndContext>
   )
 }

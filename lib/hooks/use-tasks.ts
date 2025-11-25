@@ -66,14 +66,37 @@ export function useDeleteTask() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ id, milestoneId }: { id: string; milestoneId: string }) => {
+    mutationFn: async ({ id, milestoneId: _milestoneId }: { id: string; milestoneId: string }) => {
       const response = await fetch(`/api/tasks/${id}`, { method: 'DELETE' })
       if (!response.ok) {
         const error = await response.json()
         throw new Error(error.error || 'Failed to delete task')
       }
     },
-    onSuccess: (_, variables) => {
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['tasks', variables.milestoneId] })
+    },
+  })
+}
+
+// Update task tags mutation
+export function useUpdateTaskTags() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ taskId, milestoneId: _milestoneId, tagIds }: { taskId: string; milestoneId: string; tagIds: string[] }) => {
+      const response = await fetch(`/api/tasks/${taskId}/tags`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tagIds }),
+      })
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to update task tags')
+      }
+      return response.json().then(r => r.data)
+    },
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['tasks', variables.milestoneId] })
     },
   })

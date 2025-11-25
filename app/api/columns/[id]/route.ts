@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '@/lib/prisma'
 import { updateColumnSchema } from '@/lib/validations'
-
-const prisma = new PrismaClient()
 
 // PATCH /api/columns/[id] - Update a column (rename only, key is immutable)
 export async function PATCH(

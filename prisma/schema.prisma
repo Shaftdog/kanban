@@ -126,7 +126,7 @@ model Column {
   id        String    @id @default(uuid())
   userId    String
   name      String
-  key       ColumnKey @unique
+  key       ColumnKey
   sortOrder Int       @default(0)
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -135,6 +135,7 @@ model Column {
   milestones Milestone[] @relation("MilestoneColumn")
   tasks      Task[]      @relation("TaskColumn")
 
+  @@unique([userId, key])
   @@index([userId, sortOrder])
   @@map("columns")
 }

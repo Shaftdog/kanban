@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label'
 import { useProjects, useTags } from '@/lib/hooks'
 
 interface BoardFiltersProps {
-  onFilterChange: (filters: FilterState) => void
+  onFilterChange: (_filters: FilterState) => void
 }
 
 export interface FilterState {
@@ -33,7 +33,7 @@ export function BoardFilters({ onFilterChange }: BoardFiltersProps) {
   const { data: projects } = useProjects()
   const { data: tags } = useTags()
 
-  // Load filters from localStorage on mount
+  // Load filters from localStorage on mount only
   useEffect(() => {
     const savedFilters = localStorage.getItem('kanban-board-filters')
     if (savedFilters) {
@@ -45,6 +45,7 @@ export function BoardFilters({ onFilterChange }: BoardFiltersProps) {
         console.error('Failed to parse saved filters:', error)
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const updateFilters = (newFilters: Partial<FilterState>) => {

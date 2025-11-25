@@ -29,12 +29,13 @@ export function useInitUser() {
     },
   })
 
-  // Auto-initialize if needed
+  // Auto-initialize if needed (runs once when status is known)
   useEffect(() => {
     if (initStatus?.data && !initStatus.data.isInitialized && !shouldInit) {
       setShouldInit(true)
       initMutation.mutate()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initStatus])
 
   return {

@@ -1,6 +1,5 @@
-import { PrismaClient, ColumnKey } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { ColumnKey } from '@prisma/client'
+import { prisma } from '@/lib/prisma'
 
 /**
  * Initialize default columns for a new user

@@ -2,6 +2,8 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { MobileNav } from '@/components/mobile-nav'
 import { SidebarNav } from '@/components/sidebar-nav'
+import { KeyboardShortcutsModal } from '@/components/keyboard-shortcuts-modal'
+import { WelcomeModal } from '@/components/welcome-modal'
 
 async function SignOutButton() {
   return (
@@ -34,6 +36,20 @@ export default async function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+      {/* Skip Links for Accessibility */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-blue-600 focus:text-white focus:rounded-lg focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2"
+      >
+        Skip to main content
+      </a>
+      <a
+        href="#navigation"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-48 focus:z-50 focus:px-4 focus:py-2 focus:bg-blue-600 focus:text-white focus:rounded-lg focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2"
+      >
+        Skip to navigation
+      </a>
+
       {/* Top Bar */}
       <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-30">
         <div className="px-4 sm:px-6 py-4 flex items-center justify-between">
@@ -56,7 +72,7 @@ export default async function DashboardLayout({
 
       <div className="flex">
         {/* Desktop Sidebar */}
-        <aside className="hidden lg:block w-64 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 min-h-[calc(100vh-73px)] sticky top-[73px]">
+        <aside id="navigation" className="hidden lg:block w-64 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 min-h-[calc(100vh-73px)] sticky top-[73px]">
           <SidebarNav />
           <div className="absolute bottom-4 left-4 right-4">
             <SignOutButton />
@@ -64,8 +80,16 @@ export default async function DashboardLayout({
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
+        <main id="main-content" className="flex-1 p-4 sm:p-6 lg:p-8" tabIndex={-1}>
+          {children}
+        </main>
       </div>
+
+      {/* Keyboard Shortcuts Modal */}
+      <KeyboardShortcutsModal />
+
+      {/* Welcome Modal for New Users */}
+      <WelcomeModal />
     </div>
   )
 }

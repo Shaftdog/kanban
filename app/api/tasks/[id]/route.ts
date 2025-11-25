@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '@/lib/prisma'
 import { updateTaskSchema } from '@/lib/validations'
-
-const prisma = new PrismaClient()
 
 // GET /api/tasks/[id] - Get a single task
 export async function GET(

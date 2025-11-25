@@ -1,16 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { initializeUserData } from '@/lib/utils/init-user-data'
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { prisma } from '@/lib/prisma'
 
 /**
  * POST /api/init
  * Initialize default data for the current user
  * This endpoint should be called on first login or when the user needs setup
  */
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     // Get authenticated user
     const supabase = await createClient()
@@ -61,7 +59,7 @@ export async function POST(request: NextRequest) {
  * GET /api/init
  * Check if user data is initialized
  */
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const supabase = await createClient()
     const {

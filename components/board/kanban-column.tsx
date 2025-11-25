@@ -21,9 +21,10 @@ interface KanbanColumnProps {
   column: Column
   projectId: string | null
   filters: FilterState
+  onMilestoneClick?: (_milestone: any) => void
 }
 
-export function KanbanColumn({ column, projectId, filters }: KanbanColumnProps) {
+export function KanbanColumn({ column, projectId, filters, onMilestoneClick }: KanbanColumnProps) {
   const [isAdding, setIsAdding] = useState(false)
   const [newMilestoneName, setNewMilestoneName] = useState('')
 
@@ -135,7 +136,11 @@ export function KanbanColumn({ column, projectId, filters }: KanbanColumnProps) 
               </>
             ) : milestones.length > 0 ? (
               milestones.map((milestone: any) => (
-                <DraggableMilestoneCard key={milestone.id} milestone={milestone} />
+                <DraggableMilestoneCard
+                  key={milestone.id}
+                  milestone={milestone}
+                  onClick={() => onMilestoneClick?.(milestone)}
+                />
               ))
             ) : (
             <div className="text-center py-8">

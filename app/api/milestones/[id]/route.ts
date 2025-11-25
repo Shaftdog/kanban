@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '@/lib/prisma'
 import { updateMilestoneSchema } from '@/lib/validations'
-
-const prisma = new PrismaClient()
 
 // GET /api/milestones/[id] - Get a single milestone
 export async function GET(

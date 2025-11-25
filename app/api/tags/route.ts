@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '@/lib/prisma'
 import { createTagSchema } from '@/lib/validations'
-
-const prisma = new PrismaClient()
 
 // GET /api/tags - List all tags for the authenticated user
 export async function GET() {

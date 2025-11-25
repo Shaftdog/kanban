@@ -67,3 +67,31 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Accessibility: Visible focus indicators */
+@layer utilities {
+  /* Enhanced focus ring for all interactive elements */
+  .focus-visible-ring {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-900;
+  }
+
+  /* Apply visible focus to common interactive elements */
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  [role="button"]:focus-visible,
+  [tabindex]:focus-visible:not([tabindex="-1"]) {
+    @apply outline-none ring-2 ring-blue-500 ring-offset-2 ring-offset-white dark:ring-offset-slate-900;
+  }
+
+  /* Remove default outline only when focus-visible is applied */
+  a:focus:not(:focus-visible),
+  button:focus:not(:focus-visible),
+  input:focus:not(:focus-visible),
+  select:focus:not(:focus-visible),
+  textarea:focus:not(:focus-visible) {
+    @apply outline-none;
+  }
+}
