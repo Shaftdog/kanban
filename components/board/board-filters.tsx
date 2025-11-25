@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -33,10 +33,26 @@ export function BoardFilters({ onFilterChange }: BoardFiltersProps) {
   const { data: projects } = useProjects()
   const { data: tags } = useTags()
 
+  // Load filters from localStorage on mount
+  useEffect(() => {
+    const savedFilters = localStorage.getItem('kanban-board-filters')
+    if (savedFilters) {
+      try {
+        const parsed = JSON.parse(savedFilters)
+        setFilters(parsed)
+        onFilterChange(parsed)
+      } catch (error) {
+        console.error('Failed to parse saved filters:', error)
+      }
+    }
+  }, [])
+
   const updateFilters = (newFilters: Partial<FilterState>) => {
     const updated = { ...filters, ...newFilters }
     setFilters(updated)
     onFilterChange(updated)
+    // Save to localStorage
+    localStorage.setItem('kanban-board-filters', JSON.stringify(updated))
   }
 
   const clearFilters = () => {
@@ -50,6 +66,8 @@ export function BoardFilters({ onFilterChange }: BoardFiltersProps) {
     }
     setFilters(cleared)
     onFilterChange(cleared)
+    // Clear from localStorage
+    localStorage.removeItem('kanban-board-filters')
   }
 
   const hasActiveFilters =

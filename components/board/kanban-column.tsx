@@ -1,11 +1,14 @@
 'use client'
 
+import { useState } from 'react'
 import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
-import { useMilestones } from '@/lib/hooks'
+import { useMilestones, useCreateMilestone } from '@/lib/hooks'
 import { DraggableMilestoneCard } from './draggable-milestone-card'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { FilterState } from './board-filters'
+import { toast } from 'sonner'
 
 interface Column {
   id: string
@@ -21,9 +24,13 @@ interface KanbanColumnProps {
 }
 
 export function KanbanColumn({ column, projectId, filters }: KanbanColumnProps) {
+  const [isAdding, setIsAdding] = useState(false)
+  const [newMilestoneName, setNewMilestoneName] = useState('')
+
   // For now, we'll fetch all milestones and filter by column
   // In a real app, we'd have a dedicated endpoint for this
   const { data: allMilestones, isLoading } = useMilestones(projectId || '')
+  const createMilestone = useCreateMilestone()
 
   // Apply filters
   const milestones = (allMilestones || [])
@@ -67,6 +74,32 @@ export function KanbanColumn({ column, projectId, filters }: KanbanColumnProps) 
   })
 
   const milestoneIds = milestones.map((m: any) => m.id)
+
+  const handleAddMilestone = async () => {
+    if (!newMilestoneName.trim() || !projectId) return
+
+    try {
+      await createMilestone.mutateAsync({
+        projectId,
+        name: newMilestoneName.trim(),
+        description: null,
+        value: 'MEDIUM',
+        urgency: 'MEDIUM',
+        effort: 'MEDIUM',
+        statusColumnId: column.id,
+      })
+      setNewMilestoneName('')
+      setIsAdding(false)
+      toast.success('Milestone created successfully')
+    } catch (error) {
+      toast.error('Failed to create milestone')
+    }
+  }
+
+  const handleCancelAdd = () => {
+    setNewMilestoneName('')
+    setIsAdding(false)
+  }
 
   return (
     <div className="flex-shrink-0 w-80 flex flex-col">
@@ -127,17 +160,54 @@ export function KanbanColumn({ column, projectId, filters }: KanbanColumnProps) 
           </div>
         </SortableContext>
 
-        {/* Add Card Button */}
-        {column.key !== 'COMPLETED' && (
-          <Button
-            variant="ghost"
-            className="w-full mt-3 text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800"
-          >
-            <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Add card
-          </Button>
+        {/* Add Card Button / Form */}
+        {column.key !== 'COMPLETED' && projectId && (
+          <>
+            {isAdding ? (
+              <div className="mt-3 space-y-2">
+                <Input
+                  value={newMilestoneName}
+                  onChange={(e) => setNewMilestoneName(e.target.value)}
+                  placeholder="Enter milestone name..."
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleAddMilestone()
+                    if (e.key === 'Escape') handleCancelAdd()
+                  }}
+                  className="bg-white dark:bg-slate-800"
+                />
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={handleAddMilestone}
+                    disabled={!newMilestoneName.trim() || createMilestone.isPending}
+                    className="flex-1"
+                  >
+                    {createMilestone.isPending ? 'Adding...' : 'Add'}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleCancelAdd}
+                    disabled={createMilestone.isPending}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Button
+                variant="ghost"
+                onClick={() => setIsAdding(true)}
+                className="w-full mt-3 text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Add card
+              </Button>
+            )}
+          </>
         )}
       </div>
     </div>

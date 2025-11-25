@@ -141,12 +141,66 @@ export async function initializeUserTags(userId: string) {
 }
 
 /**
+ * Create a sample welcome project for new users
+ */
+export async function createWelcomeProject(userId: string) {
+  // Check if user already has projects
+  const existingProjects = await prisma.project.findFirst({
+    where: { userId },
+  })
+
+  if (existingProjects) {
+    return // User already has projects
+  }
+
+  console.log(`📁 Creating welcome project for user ${userId}...`)
+
+  // Get the backlog column
+  const backlogColumn = await prisma.column.findFirst({
+    where: { userId, key: 'BACKLOG' },
+  })
+
+  if (!backlogColumn) {
+    console.error('Backlog column not found')
+    return
+  }
+
+  // Create welcome project
+  const project = await prisma.project.create({
+    data: {
+      userId,
+      name: 'Welcome to AI-Powered Kanban! 👋',
+      description: 'Get started with your intelligent task management system',
+      status: 'ACTIVE',
+      sortOrder: 0,
+    },
+  })
+
+  // Create sample milestone
+  await prisma.milestone.create({
+    data: {
+      projectId: project.id,
+      name: 'Learn the basics',
+      description: 'Explore the features of your new Kanban board',
+      value: 'HIGH',
+      urgency: 'MEDIUM',
+      effort: 'SMALL',
+      statusColumnId: backlogColumn.id,
+      sortOrder: 0,
+    },
+  })
+
+  console.log(`✅ Created welcome project for user ${userId}`)
+}
+
+/**
  * Initialize all default data for a new user
  */
 export async function initializeUserData(userId: string) {
   try {
     await initializeUserColumns(userId)
     await initializeUserTags(userId)
+    await createWelcomeProject(userId)
     console.log(`✅ User initialization complete for ${userId}`)
   } catch (error) {
     console.error(`❌ Error initializing user data for ${userId}:`, error)
