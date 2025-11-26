@@ -8,6 +8,7 @@ export const taskSchema = z.object({
   urgency: z.enum(['LOW', 'MEDIUM', 'HIGH']).default('MEDIUM'),
   effort: z.enum(['SMALL', 'MEDIUM', 'LARGE']).default('SMALL'),
   statusColumnId: z.string().uuid('Invalid column ID'),
+  priority: z.number().int().min(0).max(999).default(0),
   dependsOnTaskId: z.string().uuid('Invalid task ID').optional().nullable(),
   completedAt: z.coerce.date().optional().nullable(),
   sortOrder: z.number().int().nonnegative().default(0),

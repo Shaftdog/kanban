@@ -3,8 +3,11 @@
 import { useState } from 'react'
 import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
-import { useMilestones, useCreateMilestone } from '@/lib/hooks'
+import { useMilestones, useCreateMilestone, useProjects } from '@/lib/hooks'
+import { useTasks } from '@/lib/hooks/use-tasks'
 import { DraggableMilestoneCard } from './draggable-milestone-card'
+import { DraggableTaskCard } from './draggable-task-card'
+import { DraggableProjectCard } from './draggable-project-card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { FilterState } from './board-filters'
@@ -28,12 +31,47 @@ export function KanbanColumn({ column, projectId, filters, onMilestoneClick }: K
   const [isAdding, setIsAdding] = useState(false)
   const [newMilestoneName, setNewMilestoneName] = useState('')
 
-  // For now, we'll fetch all milestones and filter by column
-  // In a real app, we'd have a dedicated endpoint for this
-  const { data: allMilestones, isLoading } = useMilestones(projectId || '')
+  // Fetch data based on column type
+  const { data: allProjects, isLoading: projectsLoading } = useProjects()
+  const { data: allMilestones, isLoading: milestonesLoading } = useMilestones(projectId)
+  const { data: allTasks, isLoading: tasksLoading } = useTasks(null)
   const createMilestone = useCreateMilestone()
 
-  // Apply filters
+  // Determine column type
+  const isProjectsColumn = column.key === 'PROJECTS'
+  const isMilestonesColumn = column.key === 'MILESTONES'
+  const isBacklogColumn = column.key === 'BACKLOG'
+
+  const isLoading = isProjectsColumn
+    ? projectsLoading
+    : isBacklogColumn
+    ? tasksLoading
+    : milestonesLoading
+
+  // Apply filters for projects
+  const projects = (allProjects || [])
+    .filter((p: any) => {
+      // Filter by column
+      if (p.statusColumnId !== column.id) return false
+
+      // Filter by search
+      if (filters.search) {
+        const searchLower = filters.search.toLowerCase()
+        const matchesName = p.name.toLowerCase().includes(searchLower)
+        const matchesDescription = p.description?.toLowerCase().includes(searchLower)
+        if (!matchesName && !matchesDescription) return false
+      }
+
+      // Filter by item type
+      if (filters.itemType !== 'all' && filters.itemType !== 'projects') {
+        return false
+      }
+
+      return true
+    })
+    .sort((a: any, b: any) => a.priority - b.priority) // Sort by WBS priority ascending (1, 2, 3...)
+
+  // Apply filters for milestones
   const milestones = (allMilestones || [])
     .filter((m: any) => {
       // Filter by column
@@ -69,12 +107,73 @@ export function KanbanColumn({ column, projectId, filters, onMilestoneClick }: K
 
       return true
     })
+    .sort((a: any, b: any) => a.priority - b.priority) // Sort by WBS priority ascending (1, 2, 3...)
+
+  // Apply filters and priority sorting for tasks (BACKLOG column)
+  const tasks = (allTasks || [])
+    .filter((t: any) => {
+      // Filter by column
+      if (t.statusColumnId !== column.id) return false
+
+      // Filter by search
+      if (filters.search) {
+        const searchLower = filters.search.toLowerCase()
+        const matchesName = t.name.toLowerCase().includes(searchLower)
+        const matchesDescription = t.description?.toLowerCase().includes(searchLower)
+        if (!matchesName && !matchesDescription) return false
+      }
+
+      // Filter by project
+      if (filters.projectIds.length > 0 && !filters.projectIds.includes(t.milestone?.project?.id)) {
+        return false
+      }
+
+      // Filter by value
+      if (filters.values.length > 0 && !filters.values.includes(t.value)) {
+        return false
+      }
+
+      // Filter by item type
+      if (filters.itemType !== 'all' && filters.itemType !== 'tasks') {
+        return false
+      }
+
+      // Hide completed
+      if (filters.hideCompleted && t.completedAt) {
+        return false
+      }
+
+      return true
+    })
+    // WBS-based sorting: Project priority (asc) -> Milestone priority (asc) -> Task priority (asc)
+    .sort((a: any, b: any) => {
+      // Sort by project priority first (lower WBS number comes first: 1 before 2)
+      const projectPriorityA = a.milestone?.project?.priority || 0
+      const projectPriorityB = b.milestone?.project?.priority || 0
+      if (projectPriorityA !== projectPriorityB) {
+        return projectPriorityA - projectPriorityB
+      }
+
+      // Then by milestone priority (lower WBS number comes first: 1 before 2)
+      const milestonePriorityA = a.milestone?.priority || 0
+      const milestonePriorityB = b.milestone?.priority || 0
+      if (milestonePriorityA !== milestonePriorityB) {
+        return milestonePriorityA - milestonePriorityB
+      }
+
+      // Finally by task priority (lower WBS number comes first: 1 before 2)
+      const taskPriorityA = a.priority || 0
+      const taskPriorityB = b.priority || 0
+      return taskPriorityA - taskPriorityB
+    })
 
   const { setNodeRef, isOver } = useDroppable({
     id: column.id,
   })
 
-  const milestoneIds = milestones.map((m: any) => m.id)
+  // Use appropriate items for drag and drop context based on column type
+  const items = isProjectsColumn ? projects : isBacklogColumn ? tasks : milestones
+  const itemIds = items.map((item: any) => item.id)
 
   const handleAddMilestone = async () => {
     if (!newMilestoneName.trim() || !projectId) return
@@ -111,7 +210,7 @@ export function KanbanColumn({ column, projectId, filters, onMilestoneClick }: K
             {column.name}
           </h3>
           <span className="text-sm text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded">
-            {milestones.length}
+            {items.length}
           </span>
         </div>
       </div>
@@ -123,7 +222,7 @@ export function KanbanColumn({ column, projectId, filters, onMilestoneClick }: K
           isOver ? 'bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-400' : ''
         }`}
       >
-        <SortableContext items={milestoneIds} strategy={verticalListSortingStrategy}>
+        <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
           <div className="space-y-3">
             {isLoading ? (
               <>
@@ -134,14 +233,39 @@ export function KanbanColumn({ column, projectId, filters, onMilestoneClick }: K
                   />
                 ))}
               </>
-            ) : milestones.length > 0 ? (
-              milestones.map((milestone: any) => (
-                <DraggableMilestoneCard
-                  key={milestone.id}
-                  milestone={milestone}
-                  onClick={() => onMilestoneClick?.(milestone)}
-                />
-              ))
+            ) : items.length > 0 ? (
+              isProjectsColumn ? (
+                // Show projects in PROJECTS column
+                projects.map((project: any) => (
+                  <DraggableProjectCard
+                    key={project.id}
+                    project={project}
+                    onClick={() => {
+                      // Handle project click
+                    }}
+                  />
+                ))
+              ) : isBacklogColumn ? (
+                // Show tasks in BACKLOG column
+                tasks.map((task: any) => (
+                  <DraggableTaskCard
+                    key={task.id}
+                    task={task}
+                    onClick={() => {
+                      // Handle task click
+                    }}
+                  />
+                ))
+              ) : (
+                // Show milestones in MILESTONES and workflow columns
+                milestones.map((milestone: any) => (
+                  <DraggableMilestoneCard
+                    key={milestone.id}
+                    milestone={milestone}
+                    onClick={() => onMilestoneClick?.(milestone)}
+                  />
+                ))
+              )
             ) : (
             <div className="text-center py-8">
               <svg
@@ -165,8 +289,8 @@ export function KanbanColumn({ column, projectId, filters, onMilestoneClick }: K
           </div>
         </SortableContext>
 
-        {/* Add Card Button / Form */}
-        {column.key !== 'COMPLETED' && projectId && (
+        {/* Add Card Button / Form - only show for PROJECTS and MILESTONES columns */}
+        {(column.key === 'PROJECTS' || column.key === 'MILESTONES') && projectId && (
           <>
             {isAdding ? (
               <div className="mt-3 space-y-2">

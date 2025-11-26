@@ -20,8 +20,109 @@
       "category": "Testing",
       "lesson": "Write E2E tests for critical user flows first",
       "rationale": "Catches integration issues that unit tests miss"
+    },
+    {
+      "category": "Autonomous Debugging",
+      "lesson": "Create Playwright automation scripts to debug UI issues without manual user testing",
+      "rationale": "Eliminates back-and-forth testing loop, provides reproducible test cases, captures network traffic and console logs for analysis"
     }
   ],
+  "autonomousDebuggingWorkflow": {
+    "description": "How to debug frontend/API issues autonomously without requiring user to manually test",
+    "steps": [
+      {
+        "step": 1,
+        "action": "Create Playwright automation script",
+        "details": "Write Node.js script using Playwright to automate the user flow (login, navigate, interact with UI)",
+        "example": "debug-priority.js - automated login, navigate to board, open milestone, interact with task"
+      },
+      {
+        "step": 2,
+        "action": "Capture network traffic",
+        "details": "Use page.on('request') and page.on('response') to intercept all API calls and responses",
+        "benefit": "See exactly what data is being sent/received, identify missing fields or failed requests"
+      },
+      {
+        "step": 3,
+        "action": "Capture console logs",
+        "details": "Use page.on('console') to capture all browser console.log/error/warn output",
+        "benefit": "See frontend errors and debug logging without opening browser DevTools"
+      },
+      {
+        "step": 4,
+        "action": "Save all output to file",
+        "details": "Write logs to a text file for analysis",
+        "benefit": "Can review detailed logs even after script finishes running"
+      },
+      {
+        "step": 5,
+        "action": "Analyze captured data",
+        "details": "Review API responses to identify root cause (e.g., missing database fields, validation errors)",
+        "example": "Found tasks missing 'priority' field in API response, indicating database column didn't exist"
+      },
+      {
+        "step": 6,
+        "action": "Create direct database test scripts",
+        "details": "Write Node.js scripts using Prisma directly to test database layer independently",
+        "benefit": "Bypass API/frontend layers to isolate whether issue is in database, API, or frontend"
+      },
+      {
+        "step": 7,
+        "action": "Apply fix and verify",
+        "details": "Fix the root cause, then re-run automation script to verify fix worked",
+        "benefit": "Immediate verification without waiting for user to manually test"
+      }
+    ],
+    "exampleScripts": {
+      "playwrightDebugger": {
+        "file": "debug-priority.js",
+        "purpose": "Automated browser testing with network capture",
+        "keyFeatures": [
+          "Automated login with credentials from TEST_CREDENTIALS.md",
+          "Navigate through UI flow (board -> milestone -> task)",
+          "Capture all /api/tasks network traffic",
+          "Save console logs and network logs to file",
+          "Take screenshots for visual debugging"
+        ]
+      },
+      "directDatabaseTest": {
+        "file": "test-priority.js",
+        "purpose": "Test database directly with Prisma",
+        "keyFeatures": [
+          "Load .env.local for DATABASE_URL",
+          "Query database directly bypassing API",
+          "Verify schema changes applied correctly",
+          "Test data integrity"
+        ]
+      },
+      "schemaPusher": {
+        "file": "push-schema.js",
+        "purpose": "Apply Prisma schema changes to Supabase",
+        "keyFeatures": [
+          "Load environment variables from .env.local",
+          "Run 'prisma db push' to sync schema",
+          "Handle Supabase connection pooler limitations"
+        ]
+      }
+    },
+    "templateScript": "const { chromium } = require('playwright');\nconst fs = require('fs');\n\nasync function debugFeature() {\n  const logs = [];\n  const log = (msg) => { console.log(msg); logs.push(msg); };\n  \n  const browser = await chromium.launch({ headless: false });\n  const page = await browser.newPage();\n  \n  // Capture network\n  page.on('request', req => {\n    if (req.url().includes('/api/')) {\n      log(`[REQUEST] ${req.method()} ${req.url()}`);\n      if (req.postData()) log(`[BODY] ${req.postData()}`);\n    }\n  });\n  \n  page.on('response', async res => {\n    if (res.url().includes('/api/')) {\n      log(`[RESPONSE] ${res.status()} ${res.url()}`);\n      try { log(`[DATA] ${await res.text()}`); } catch(e) {}\n    }\n  });\n  \n  // Capture console\n  page.on('console', msg => log(`[CONSOLE ${msg.type()}] ${msg.text()}`));\n  \n  try {\n    // Your automated test flow here\n    await page.goto('http://localhost:3000/login');\n    // ... rest of flow\n  } finally {\n    fs.writeFileSync('debug-logs.txt', logs.join('\\n'));\n    await browser.close();\n  }\n}\n\ndebugFeature().catch(console.error);",
+    "whenToUse": [
+      "User reports bug but description is unclear",
+      "Need to verify a fix works end-to-end",
+      "Debugging API integration issues",
+      "Reproducing intermittent bugs",
+      "User says 'it's not working' without details",
+      "Want to eliminate manual testing loop"
+    ],
+    "benefits": [
+      "No need for user to manually test each iteration",
+      "Reproducible test cases",
+      "Detailed network and console logs for debugging",
+      "Can run headless for CI/CD integration",
+      "Faster iteration cycle",
+      "Captures exact state at time of error"
+    ]
+  },
   "commonIssues": [
     {
       "issue": "RLS policies blocking valid queries",
@@ -30,10 +131,18 @@
     {
       "issue": "AI token costs higher than expected",
       "solution": "Implement aggressive caching and use gpt-4o-mini when possible"
+    },
+    {
+      "issue": "Prisma schema changes not reflected in database",
+      "solution": "Run 'npx prisma db push' (for Supabase/pooled connections) or 'npx prisma migrate dev' (for direct connections). Then restart Next.js dev server to reload Prisma Client."
+    },
+    {
+      "issue": "API returning objects with missing fields",
+      "solution": "Check database schema with direct Prisma query - field may not exist in database even if defined in schema. Run 'prisma db push' to sync."
     }
   ],
   "metadata": {
-    "lastUpdated": "2025-11-24",
-    "projectPhase": "Phase 0"
+    "lastUpdated": "2025-11-26",
+    "projectPhase": "Phase 6 - Complete"
   }
 }

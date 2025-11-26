@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { PriorityBadge } from './priority-badge'
 
 interface Milestone {
   id: string
@@ -10,6 +11,7 @@ interface Milestone {
   value: 'LOW' | 'MEDIUM' | 'HIGH'
   urgency: 'LOW' | 'MEDIUM' | 'HIGH'
   effort: 'SMALL' | 'MEDIUM' | 'LARGE'
+  priority: number
   priorityScore: number | null
   statusColumnId: string
   _count?: {
@@ -39,15 +41,17 @@ export function MilestoneCard({ milestone }: MilestoneCardProps) {
   return (
     <Card className="cursor-pointer hover:shadow-md transition-shadow bg-white dark:bg-slate-800 border-l-4 border-l-purple-500">
       <CardHeader className="p-4 pb-3">
-        <div className="flex items-start justify-between mb-2">
-          <CardTitle className="text-sm font-semibold text-slate-900 dark:text-white line-clamp-2">
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <CardTitle className="text-sm font-semibold text-slate-900 dark:text-white line-clamp-2 flex-1">
             {milestone.name}
           </CardTitle>
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              setIsExpanded(!isExpanded)
-            }}
+          <div className="flex items-center gap-2">
+            <PriorityBadge wbsCode={String(milestone.priority || 0)} type="milestone" />
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                setIsExpanded(!isExpanded)
+              }}
             className="ml-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
           >
             <svg
@@ -60,6 +64,7 @@ export function MilestoneCard({ milestone }: MilestoneCardProps) {
             </svg>
           </button>
         </div>
+      </div>
 
         {milestone.description && (
           <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2">

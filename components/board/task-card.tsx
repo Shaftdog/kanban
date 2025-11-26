@@ -1,6 +1,7 @@
 'use client'
 
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { PriorityBadge } from './priority-badge'
 
 interface Task {
   id: string
@@ -9,13 +10,25 @@ interface Task {
   value: 'LOW' | 'MEDIUM' | 'HIGH'
   urgency: 'LOW' | 'MEDIUM' | 'HIGH'
   effort: 'SMALL' | 'MEDIUM' | 'LARGE'
+  priority: number
   priorityScore: number | null
   completedAt: Date | null
   statusColumnId: string
+  milestone?: {
+    id: string
+    name: string
+    priority: number
+    project: {
+      id: string
+      name: string
+      priority: number
+    }
+  }
 }
 
 interface TaskCardProps {
   task: Task
+  onClick?: () => void
 }
 
 const priorityColors = {
@@ -30,36 +43,60 @@ const effortColors = {
   LARGE: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400',
 }
 
-export function TaskCard({ task }: TaskCardProps) {
+export function TaskCard({ task, onClick }: TaskCardProps) {
   const isCompleted = task.completedAt !== null
 
+  // Build WBS code: project.milestone.task
+  const wbsCode = task.milestone
+    ? `${task.milestone.project.priority || 0}.${task.milestone.priority || 0}.${task.priority || 0}`
+    : String(task.priority || 0)
+
   return (
-    <Card className="cursor-pointer hover:shadow-md transition-shadow bg-white dark:bg-slate-800 border-l-4 border-l-blue-500">
+    <Card
+      className="cursor-pointer hover:shadow-md transition-shadow bg-white dark:bg-slate-800 border-l-4 border-l-blue-500"
+      onClick={onClick}
+    >
       <CardHeader className="p-4 pb-3">
-        <div className="flex items-start gap-2">
-          {/* Checkbox for completed state */}
-          {isCompleted && (
-            <svg
-              className="w-5 h-5 text-green-500 flex-shrink-0"
-              fill="currentColor"
-              viewBox="0 0 20 20"
+        {/* Milestone and Project reference */}
+        {task.milestone && (
+          <div className="mb-2 space-y-1">
+            <div className="text-xs text-slate-500 dark:text-slate-400">
+              <span className="font-medium">{task.milestone.project.name}</span>
+            </div>
+            <div className="text-xs text-blue-600 dark:text-blue-400">
+              <span>→ {task.milestone.name}</span>
+            </div>
+          </div>
+        )}
+
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex items-start gap-2 flex-1">
+            {/* Checkbox for completed state */}
+            {isCompleted && (
+              <svg
+                className="w-5 h-5 text-green-500 flex-shrink-0"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            )}
+            <CardTitle
+              className={`text-sm font-medium flex-1 ${
+                isCompleted
+                  ? 'text-slate-500 dark:text-slate-500 line-through'
+                  : 'text-slate-900 dark:text-white'
+              } line-clamp-2`}
             >
-              <path
-                fillRule="evenodd"
-                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                clipRule="evenodd"
-              />
-            </svg>
-          )}
-          <CardTitle
-            className={`text-sm font-medium flex-1 ${
-              isCompleted
-                ? 'text-slate-500 dark:text-slate-500 line-through'
-                : 'text-slate-900 dark:text-white'
-            } line-clamp-2`}
-          >
-            {task.name}
-          </CardTitle>
+              {task.name}
+            </CardTitle>
+          </div>
+          {/* WBS Code */}
+          <PriorityBadge wbsCode={wbsCode} type="task" />
         </div>
 
         {task.description && (

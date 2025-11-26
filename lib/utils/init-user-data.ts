@@ -30,9 +30,17 @@ export async function initializeUserColumns(userId: string) {
     prisma.column.create({
       data: {
         userId,
+        name: 'Milestones',
+        key: ColumnKey.MILESTONES,
+        sortOrder: 1,
+      },
+    }),
+    prisma.column.create({
+      data: {
+        userId,
         name: 'Backlog',
         key: ColumnKey.BACKLOG,
-        sortOrder: 1,
+        sortOrder: 2,
       },
     }),
     prisma.column.create({
@@ -40,7 +48,7 @@ export async function initializeUserColumns(userId: string) {
         userId,
         name: 'Working',
         key: ColumnKey.WORKING,
-        sortOrder: 2,
+        sortOrder: 3,
       },
     }),
     prisma.column.create({
@@ -48,7 +56,7 @@ export async function initializeUserColumns(userId: string) {
         userId,
         name: 'Ready for Test',
         key: ColumnKey.READY_TEST,
-        sortOrder: 3,
+        sortOrder: 4,
       },
     }),
     prisma.column.create({
@@ -56,7 +64,7 @@ export async function initializeUserColumns(userId: string) {
         userId,
         name: 'Agent Testing',
         key: ColumnKey.AGENT_TESTING,
-        sortOrder: 4,
+        sortOrder: 5,
       },
     }),
     prisma.column.create({
@@ -64,7 +72,7 @@ export async function initializeUserColumns(userId: string) {
         userId,
         name: 'Deployed/Testing',
         key: ColumnKey.DEPLOYED_TESTING,
-        sortOrder: 5,
+        sortOrder: 6,
       },
     }),
     prisma.column.create({
@@ -72,7 +80,7 @@ export async function initializeUserColumns(userId: string) {
         userId,
         name: 'Completed',
         key: ColumnKey.COMPLETED,
-        sortOrder: 6,
+        sortOrder: 7,
       },
     }),
   ])
@@ -154,13 +162,16 @@ export async function createWelcomeProject(userId: string) {
 
   console.log(`📁 Creating welcome project for user ${userId}...`)
 
-  // Get the backlog column
+  // Get the milestones and backlog columns
+  const milestonesColumn = await prisma.column.findFirst({
+    where: { userId, key: 'MILESTONES' },
+  })
   const backlogColumn = await prisma.column.findFirst({
     where: { userId, key: 'BACKLOG' },
   })
 
-  if (!backlogColumn) {
-    console.error('Backlog column not found')
+  if (!milestonesColumn || !backlogColumn) {
+    console.error('Required columns not found')
     return
   }
 
@@ -171,18 +182,34 @@ export async function createWelcomeProject(userId: string) {
       name: 'Welcome to AI-Powered Kanban! 👋',
       description: 'Get started with your intelligent task management system',
       status: 'ACTIVE',
+      priority: 1, // Highest priority for welcome project
       sortOrder: 0,
     },
   })
 
   // Create sample milestone
-  await prisma.milestone.create({
+  const milestone = await prisma.milestone.create({
     data: {
       projectId: project.id,
       name: 'Learn the basics',
       description: 'Explore the features of your new Kanban board',
       value: 'HIGH',
       urgency: 'MEDIUM',
+      effort: 'SMALL',
+      priority: 1, // Highest priority milestone
+      statusColumnId: milestonesColumn.id,
+      sortOrder: 0,
+    },
+  })
+
+  // Create sample tasks in the backlog
+  await prisma.task.create({
+    data: {
+      milestoneId: milestone.id,
+      name: 'Explore the Kanban board',
+      description: 'Check out all the columns and drag cards around',
+      value: 'MEDIUM',
+      urgency: 'LOW',
       effort: 'SMALL',
       statusColumnId: backlogColumn.id,
       sortOrder: 0,

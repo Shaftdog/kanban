@@ -30,6 +30,8 @@ export function KanbanBoard({ projectId }: KanbanBoardProps) {
   const [isAIPanelOpen, setIsAIPanelOpen] = useState(false)
   const [selectedMilestone, setSelectedMilestone] = useState<any>(null)
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false)
+  const [isInitializing, setIsInitializing] = useState(false)
+  const [initError, setInitError] = useState<string | null>(null)
   const [filters, setFilters] = useState<FilterState>({
     search: '',
     projectIds: [],
@@ -113,7 +115,30 @@ export function KanbanBoard({ projectId }: KanbanBoardProps) {
     )
   }
 
+  const handleInitialize = async () => {
+    setIsInitializing(true)
+    setInitError(null)
+
+    try {
+      const response = await fetch('/api/init', {
+        method: 'POST',
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to initialize workspace')
+      }
+
+      // Reload the page to show the initialized board
+      window.location.reload()
+    } catch (err) {
+      setInitError(err instanceof Error ? err.message : 'Failed to initialize workspace')
+      setIsInitializing(false)
+    }
+  }
+
   if (!columns || columns.length === 0) {
+
     return (
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-12 text-center">
         <svg
@@ -130,11 +155,23 @@ export function KanbanBoard({ projectId }: KanbanBoardProps) {
           />
         </svg>
         <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-2">
-          No columns configured
+          Welcome to AI-Powered Kanban!
         </h3>
-        <p className="text-slate-600 dark:text-slate-400">
-          Please initialize your workspace to create default columns
+        <p className="text-slate-600 dark:text-slate-400 mb-6">
+          Let's set up your workspace with default columns and get you started
         </p>
+        <button
+          onClick={handleInitialize}
+          disabled={isInitializing}
+          className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium rounded-lg transition-colors"
+        >
+          {isInitializing ? 'Initializing...' : 'Initialize Workspace'}
+        </button>
+        {initError && (
+          <p className="mt-4 text-red-600 dark:text-red-400">
+            Error: {initError}
+          </p>
+        )}
       </div>
     )
   }

@@ -98,7 +98,9 @@ export async function PATCH(
     }
 
     const body = await request.json()
+    console.log('PATCH /api/tasks/[id] - Request body:', JSON.stringify(body, null, 2))
     const validatedData = updateTaskSchema.parse(body)
+    console.log('PATCH /api/tasks/[id] - Validated data:', JSON.stringify(validatedData, null, 2))
 
     // Recalculate priority score if relevant fields changed
     let priorityScore = existingTask.priorityScore
@@ -130,6 +132,13 @@ export async function PATCH(
   } catch (error) {
     console.error('Error updating task:', error)
 
+    // Log full error details
+    if (error instanceof Error) {
+      console.error('Error name:', error.name)
+      console.error('Error message:', error.message)
+      console.error('Error stack:', error.stack)
+    }
+
     if (error instanceof Error && error.name === 'ZodError') {
       return NextResponse.json(
         { error: 'Invalid request data', details: error },
@@ -138,7 +147,7 @@ export async function PATCH(
     }
 
     return NextResponse.json(
-      { error: 'Failed to update task' },
+      { error: 'Failed to update task', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
   }

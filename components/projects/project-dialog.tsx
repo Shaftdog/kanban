@@ -14,12 +14,14 @@ interface ProjectDialogProps {
     id: string
     name: string
     description: string | null
+    priority: number
   } | null
 }
 
 export function ProjectDialog({ open, onOpenChange, project }: ProjectDialogProps) {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
+  const [priority, setPriority] = useState(0)
   const [error, setError] = useState<string | null>(null)
 
   const createProject = useCreateProject()
@@ -29,9 +31,11 @@ export function ProjectDialog({ open, onOpenChange, project }: ProjectDialogProp
     if (project) {
       setName(project.name)
       setDescription(project.description || '')
+      setPriority(project.priority || 0)
     } else {
       setName('')
       setDescription('')
+      setPriority(0)
     }
     setError(null)
   }, [project, open])
@@ -44,13 +48,14 @@ export function ProjectDialog({ open, onOpenChange, project }: ProjectDialogProp
       if (project) {
         await updateProject.mutateAsync({
           id: project.id,
-          data: { name, description: description || null },
+          data: { name, description: description || null, priority },
         })
       } else {
         await createProject.mutateAsync({
           name,
           description: description || null,
           status: 'ACTIVE',
+          priority,
         })
       }
       onOpenChange(false)
@@ -98,6 +103,26 @@ export function ProjectDialog({ open, onOpenChange, project }: ProjectDialogProp
               />
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                 {description.length}/500 characters
+              </p>
+            </div>
+
+            <div>
+              <Label htmlFor="priority">Priority (WBS Order)</Label>
+              <Input
+                id="priority"
+                type="number"
+                min="0"
+                max="999"
+                value={priority}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value) || 0
+                  setPriority(Math.max(0, Math.min(999, val)))
+                }}
+                placeholder="e.g., 1, 2, 3..."
+                className="mt-2"
+              />
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                Enter 1 for first priority, 2 for second, etc.
               </p>
             </div>
           </div>

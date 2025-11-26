@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
 import { createMilestoneSchema } from '@/lib/validations'
 
-// GET /api/milestones?projectId=xxx - List milestones for a project
+// GET /api/milestones?projectId=xxx - List milestones for a project (or all if no projectId)
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
@@ -18,32 +18,40 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
     const projectId = searchParams.get('projectId')
 
-    if (!projectId) {
-      return NextResponse.json(
-        { error: 'projectId query parameter is required' },
-        { status: 400 }
-      )
+    // If projectId is provided, verify it belongs to user
+    if (projectId) {
+      const project = await prisma.project.findFirst({
+        where: {
+          id: projectId,
+          userId: session.user.id,
+        },
+      })
+
+      if (!project) {
+        return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+      }
     }
 
-    // Verify project belongs to user
-    const project = await prisma.project.findFirst({
-      where: {
-        id: projectId,
-        userId: session.user.id,
-      },
-    })
-
-    if (!project) {
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 })
-    }
-
+    // Fetch milestones - either for specific project or all user's milestones
     const milestones = await prisma.milestone.findMany({
-      where: {
-        projectId,
-      },
+      where: projectId
+        ? {
+            projectId,
+          }
+        : {
+            project: {
+              userId: session.user.id,
+            },
+          },
       orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
       include: {
         statusColumn: true,
+        project: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
         dependsOnMilestone: {
           select: {
             id: true,

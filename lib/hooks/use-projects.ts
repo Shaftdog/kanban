@@ -7,6 +7,7 @@ interface Project {
   name: string
   description: string | null
   status: 'ACTIVE' | 'ARCHIVED'
+  priority: number
   sortOrder: number
   createdAt: Date
   updatedAt: Date

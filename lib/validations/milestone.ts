@@ -8,6 +8,7 @@ export const milestoneSchema = z.object({
   urgency: z.enum(['LOW', 'MEDIUM', 'HIGH']).default('MEDIUM'),
   effort: z.enum(['SMALL', 'MEDIUM', 'LARGE']).default('MEDIUM'),
   statusColumnId: z.string().uuid('Invalid column ID'),
+  priority: z.number().int().min(0).max(999).default(0),
   dependsOnMilestoneId: z.string().uuid('Invalid milestone ID').optional().nullable(),
   sortOrder: z.number().int().nonnegative().default(0),
 })

@@ -31,6 +31,7 @@ import { Label } from '@/components/ui/label'
 import { useUpdateMilestone, useDeleteMilestone, useColumns, useTasks, useCreateTask, useUpdateTask, useDeleteTask } from '@/lib/hooks'
 import { TagSelector } from './tag-selector'
 import { DependencySelector } from './dependency-selector'
+import { PriorityBadge } from './priority-badge'
 import { toast } from 'sonner'
 
 type Priority = 'LOW' | 'MEDIUM' | 'HIGH'
@@ -45,6 +46,7 @@ interface Milestone {
   urgency: Priority
   effort: Effort
   statusColumnId: string
+  priority: number
   priorityScore: number | null
   dependsOnMilestoneId: string | null
   sortOrder: number
@@ -79,6 +81,7 @@ interface Task {
   urgency: Priority
   effort: Effort
   statusColumnId: string
+  priority: number
   priorityScore: number | null
   completedAt: Date | string | null
   sortOrder: number
@@ -113,11 +116,14 @@ export function ItemDetailModal({ item, isOpen, onClose }: ItemDetailModalProps)
   const [urgency, setUrgency] = useState<Priority>('MEDIUM')
   const [effort, setEffort] = useState<Effort>('MEDIUM')
   const [statusColumnId, setStatusColumnId] = useState('')
+  const [priority, setPriority] = useState(0)
   const [isEditing, setIsEditing] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [newTaskName, setNewTaskName] = useState('')
   const [isAddingTask, setIsAddingTask] = useState(false)
+  const [newTaskPriority, setNewTaskPriority] = useState(0)
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null)
+  const [editingTaskPriority, setEditingTaskPriority] = useState<Record<string, number>>({})
   const [isSaving, setIsSaving] = useState(false)
   const autosaveTimerRef = useRef<NodeJS.Timeout | null>(null)
   const lastSavedDescriptionRef = useRef<string>('')
@@ -140,6 +146,7 @@ export function ItemDetailModal({ item, isOpen, onClose }: ItemDetailModalProps)
       setUrgency(item.urgency)
       setEffort(item.effort)
       setStatusColumnId(item.statusColumnId)
+      setPriority(item.priority || 0)
       setIsEditing(false)
     }
   }, [item])
@@ -222,6 +229,7 @@ export function ItemDetailModal({ item, isOpen, onClose }: ItemDetailModalProps)
           urgency,
           effort,
           statusColumnId,
+          priority,
         },
       })
       setIsEditing(false)
@@ -259,8 +267,10 @@ export function ItemDetailModal({ item, isOpen, onClose }: ItemDetailModalProps)
         urgency: 'MEDIUM',
         effort: 'SMALL',
         statusColumnId: item.statusColumnId,
+        priority: newTaskPriority,
       })
       setNewTaskName('')
+      setNewTaskPriority(0)
       setIsAddingTask(false)
       toast.success('Task created successfully')
     } catch (error) {
@@ -302,9 +312,10 @@ export function ItemDetailModal({ item, isOpen, onClose }: ItemDetailModalProps)
       value !== item.value ||
       urgency !== item.urgency ||
       effort !== item.effort ||
-      statusColumnId !== item.statusColumnId
+      statusColumnId !== item.statusColumnId ||
+      priority !== (item.priority || 0)
     )
-  }, [item, name, description, value, urgency, effort, statusColumnId])
+  }, [item, name, description, value, urgency, effort, statusColumnId, priority])
 
   const completedTasks = (tasks || []).filter((t: Task) => t.completedAt !== null)
   const incompleteTasks = (tasks || []).filter((t: Task) => t.completedAt === null)
@@ -380,6 +391,25 @@ export function ItemDetailModal({ item, isOpen, onClose }: ItemDetailModalProps)
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* WBS Priority */}
+            <div className="space-y-2">
+              <Label>Priority (WBS Order)</Label>
+              <Input
+                type="number"
+                min="0"
+                max="999"
+                value={priority}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value) || 0
+                  setPriority(Math.max(0, Math.min(999, val)))
+                  setIsEditing(true)
+                }}
+                placeholder="e.g., 1, 2, 3..."
+                className="w-full"
+              />
+              <p className="text-xs text-slate-500">Enter 1 for first priority, 2 for second, etc.</p>
             </div>
 
             {/* Priority Fields */}
@@ -536,7 +566,15 @@ export function ItemDetailModal({ item, isOpen, onClose }: ItemDetailModalProps)
                             onClick={() => setExpandedTaskId(expandedTaskId === task.id ? null : task.id)}
                             className="flex-1 text-left"
                           >
-                            <span className="text-sm">{task.name}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm">{task.name}</span>
+                              {task.priority > 0 && (
+                                <PriorityBadge
+                                  wbsCode={String(task.priority)}
+                                  type="task"
+                                />
+                              )}
+                            </div>
                             {task.tags && task.tags.length > 0 && (
                               <div className="flex flex-wrap gap-1 mt-1">
                                 {task.tags.map((taskTag) => (
@@ -560,16 +598,67 @@ export function ItemDetailModal({ item, isOpen, onClose }: ItemDetailModalProps)
                             </svg>
                           </button>
                         </div>
-                        {/* Expanded Task Details with Tags */}
+                        {/* Expanded Task Details with Tags and Priority */}
                         {expandedTaskId === task.id && item && (
-                          <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
-                            <Label className="text-xs">Tags</Label>
-                            <div className="mt-1">
-                              <TagSelector
-                                taskId={task.id}
-                                milestoneId={item.id}
-                                selectedTags={task.tags || []}
+                          <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700 space-y-3">
+                            <div>
+                              <Label className="text-xs">Priority (WBS Order)</Label>
+                              <Input
+                                type="number"
+                                min="0"
+                                max="999"
+                                value={editingTaskPriority[task.id] ?? task.priority ?? 0}
+                                onChange={(e) => {
+                                  const val = parseInt(e.target.value) || 0
+                                  const newPriority = Math.max(0, Math.min(999, val))
+                                  setEditingTaskPriority(prev => ({
+                                    ...prev,
+                                    [task.id]: newPriority
+                                  }))
+                                }}
+                                onBlur={async () => {
+                                  const newPriority = editingTaskPriority[task.id]
+                                  console.log('onBlur triggered for task:', task.id)
+                                  console.log('newPriority from state:', newPriority)
+                                  console.log('current task.priority:', task.priority)
+                                  console.log('editingTaskPriority state:', editingTaskPriority)
+
+                                  if (newPriority !== undefined && newPriority !== task.priority) {
+                                    console.log('Priority changed, calling API...')
+                                    const payload = {
+                                      id: task.id,
+                                      data: {
+                                        milestoneId: task.milestoneId,
+                                        priority: newPriority,
+                                      },
+                                    }
+                                    console.log('API payload:', JSON.stringify(payload, null, 2))
+
+                                    try {
+                                      const result = await updateTask.mutateAsync(payload)
+                                      console.log('API success:', result)
+                                      toast.success('Priority updated')
+                                    } catch (error) {
+                                      console.error('API error:', error)
+                                      toast.error('Failed to update priority')
+                                    }
+                                  } else {
+                                    console.log('No change detected, skipping API call')
+                                  }
+                                }}
+                                placeholder="e.g., 1, 2, 3..."
+                                className="mt-1"
                               />
+                            </div>
+                            <div>
+                              <Label className="text-xs">Tags</Label>
+                              <div className="mt-1">
+                                <TagSelector
+                                  taskId={task.id}
+                                  milestoneId={item.id}
+                                  selectedTags={task.tags || []}
+                                />
+                              </div>
                             </div>
                           </div>
                         )}
@@ -615,37 +704,61 @@ export function ItemDetailModal({ item, isOpen, onClose }: ItemDetailModalProps)
 
                 {/* Add Task Form */}
                 {isAddingTask ? (
-                  <div className="flex gap-2 mt-2">
-                    <Input
-                      value={newTaskName}
-                      onChange={(e) => setNewTaskName(e.target.value)}
-                      placeholder="Task name..."
-                      autoFocus
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleAddTask()
-                        if (e.key === 'Escape') {
+                  <div className="space-y-2 mt-2 p-3 bg-slate-100 dark:bg-slate-800 rounded-md">
+                    <div>
+                      <Label className="text-xs">Task Name</Label>
+                      <Input
+                        value={newTaskName}
+                        onChange={(e) => setNewTaskName(e.target.value)}
+                        placeholder="Task name..."
+                        autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleAddTask()
+                          if (e.key === 'Escape') {
+                            setIsAddingTask(false)
+                            setNewTaskName('')
+                            setNewTaskPriority(0)
+                          }
+                        }}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Priority (WBS Order)</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        max="999"
+                        value={newTaskPriority}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value) || 0
+                          setNewTaskPriority(Math.max(0, Math.min(999, val)))
+                        }}
+                        placeholder="e.g., 1, 2, 3..."
+                        className="mt-1"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        onClick={handleAddTask}
+                        disabled={!newTaskName.trim() || createTask.isPending}
+                        className="flex-1"
+                      >
+                        {createTask.isPending ? 'Adding...' : 'Add'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
                           setIsAddingTask(false)
                           setNewTaskName('')
-                        }
-                      }}
-                    />
-                    <Button
-                      size="sm"
-                      onClick={handleAddTask}
-                      disabled={!newTaskName.trim() || createTask.isPending}
-                    >
-                      Add
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setIsAddingTask(false)
-                        setNewTaskName('')
-                      }}
-                    >
-                      Cancel
-                    </Button>
+                          setNewTaskPriority(0)
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
                   </div>
                 ) : (
                   <Button
@@ -690,6 +803,7 @@ export function ItemDetailModal({ item, isOpen, onClose }: ItemDetailModalProps)
                       setUrgency(item.urgency)
                       setEffort(item.effort)
                       setStatusColumnId(item.statusColumnId)
+                      setPriority(item.priority || 0)
                       setIsEditing(false)
                     }
                   }}

@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
 import { createTaskSchema } from '@/lib/validations'
 
-// GET /api/tasks?milestoneId=xxx - List tasks for a milestone
+// GET /api/tasks?milestoneId=xxx - List tasks for a milestone (or all if no milestoneId)
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
@@ -18,34 +18,52 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
     const milestoneId = searchParams.get('milestoneId')
 
-    if (!milestoneId) {
-      return NextResponse.json(
-        { error: 'milestoneId query parameter is required' },
-        { status: 400 }
-      )
-    }
-
-    // Verify milestone belongs to user's project
-    const milestone = await prisma.milestone.findFirst({
-      where: {
-        id: milestoneId,
-        project: {
-          userId: session.user.id,
+    // If milestoneId is provided, verify it belongs to user
+    if (milestoneId) {
+      const milestone = await prisma.milestone.findFirst({
+        where: {
+          id: milestoneId,
+          project: {
+            userId: session.user.id,
+          },
         },
-      },
-    })
+      })
 
-    if (!milestone) {
-      return NextResponse.json({ error: 'Milestone not found' }, { status: 404 })
+      if (!milestone) {
+        return NextResponse.json({ error: 'Milestone not found' }, { status: 404 })
+      }
     }
 
+    // Fetch tasks - either for specific milestone or all user's tasks
     const tasks = await prisma.task.findMany({
-      where: {
-        milestoneId,
-      },
+      where: milestoneId
+        ? {
+            milestoneId,
+          }
+        : {
+            milestone: {
+              project: {
+                userId: session.user.id,
+              },
+            },
+          },
       orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
       include: {
         statusColumn: true,
+        milestone: {
+          select: {
+            id: true,
+            name: true,
+            priority: true,
+            project: {
+              select: {
+                id: true,
+                name: true,
+                priority: true,
+              },
+            },
+          },
+        },
         dependsOnTask: {
           select: {
             id: true,

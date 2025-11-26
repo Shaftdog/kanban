@@ -28,21 +28,26 @@ model User {
 
 // Project: Top-level container
 model Project {
-  id          String        @id @default(uuid())
-  userId      String
-  name        String
-  description String?
-  status      ProjectStatus @default(ACTIVE)
-  sortOrder   Int           @default(0)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  archivedAt  DateTime?
+  id             String        @id @default(uuid())
+  userId         String
+  name           String
+  description    String?
+  status         ProjectStatus @default(ACTIVE)
+  statusColumnId String?
+  priority       Int           @default(0) // Higher number = higher priority
+  sortOrder      Int           @default(0)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  archivedAt     DateTime?
 
-  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  milestones Milestone[]
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  statusColumn Column?     @relation("ProjectColumn", fields: [statusColumnId], references: [id])
+  milestones   Milestone[]
 
   @@index([userId, status])
   @@index([userId, sortOrder])
+  @@index([userId, priority])
+  @@index([statusColumnId])
   @@map("projects")
 }
 
@@ -62,6 +67,7 @@ model Milestone {
   effort               Effort    @default(MEDIUM)
   statusColumnId       String
   priorityScore        Float?
+  priority             Int       @default(0) // Higher number = higher priority within project
   dependsOnMilestoneId String?
   sortOrder            Int       @default(0)
   createdAt            DateTime  @default(now())
@@ -76,6 +82,7 @@ model Milestone {
   @@index([projectId, statusColumnId])
   @@index([statusColumnId, sortOrder])
   @@index([priorityScore])
+  @@index([projectId, priority])
   @@map("milestones")
 }
 
@@ -89,6 +96,7 @@ model Task {
   urgency         Priority  @default(MEDIUM)
   effort          Effort    @default(SMALL)
   statusColumnId  String
+  priority        Int       @default(0) // Higher number = higher priority within milestone
   priorityScore   Float?
   dependsOnTaskId String?
   completedAt     DateTime?
@@ -132,6 +140,7 @@ model Column {
   updatedAt DateTime  @updatedAt
 
   user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projects   Project[]   @relation("ProjectColumn")
   milestones Milestone[] @relation("MilestoneColumn")
   tasks      Task[]      @relation("TaskColumn")
 
@@ -142,6 +151,7 @@ model Column {
 
 enum ColumnKey {
   PROJECTS
+  MILESTONES
   BACKLOG
   WORKING
   READY_TEST

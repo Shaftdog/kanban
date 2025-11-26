@@ -20,24 +20,30 @@ interface Milestone {
     name: string
     key: string
   }
+  project?: {
+    id: string
+    name: string
+  }
   _count?: {
     tasks: number
   }
 }
 
-// Fetch milestones for a project
-export function useMilestones(projectId: string) {
+// Fetch milestones for a project (or all milestones if no projectId)
+export function useMilestones(projectId?: string | null) {
   return useQuery({
-    queryKey: ['milestones', projectId],
+    queryKey: ['milestones', projectId || 'all'],
     queryFn: async (): Promise<Milestone[]> => {
-      const response = await fetch(`/api/milestones?projectId=${projectId}`)
+      const url = projectId
+        ? `/api/milestones?projectId=${projectId}`
+        : '/api/milestones'
+      const response = await fetch(url)
       if (!response.ok) {
         throw new Error('Failed to fetch milestones')
       }
       const json = await response.json()
       return json.data
     },
-    enabled: !!projectId,
   })
 }
 
@@ -79,6 +85,7 @@ export function useCreateMilestone() {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['milestones', variables.projectId] })
+      queryClient.invalidateQueries({ queryKey: ['milestones', 'all'] })
       queryClient.invalidateQueries({ queryKey: ['projects', variables.projectId] })
     },
   })
@@ -112,6 +119,7 @@ export function useUpdateMilestone() {
     },
     onSuccess: (milestone) => {
       queryClient.invalidateQueries({ queryKey: ['milestones', milestone.projectId] })
+      queryClient.invalidateQueries({ queryKey: ['milestones', 'all'] })
       queryClient.invalidateQueries({ queryKey: ['milestones', milestone.id] })
       queryClient.invalidateQueries({ queryKey: ['projects', milestone.projectId] })
     },
@@ -135,6 +143,7 @@ export function useDeleteMilestone() {
     },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['milestones', variables.projectId] })
+      queryClient.invalidateQueries({ queryKey: ['milestones', 'all'] })
       queryClient.invalidateQueries({ queryKey: ['projects', variables.projectId] })
     },
   })

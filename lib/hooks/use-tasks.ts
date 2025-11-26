@@ -1,17 +1,19 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { CreateTaskData, UpdateTaskData } from '@/lib/validations'
 
-// Fetch tasks for a milestone
-export function useTasks(milestoneId: string) {
+// Fetch tasks for a milestone (or all tasks if no milestoneId)
+export function useTasks(milestoneId?: string | null) {
   return useQuery({
-    queryKey: ['tasks', milestoneId],
+    queryKey: ['tasks', milestoneId || 'all'],
     queryFn: async () => {
-      const response = await fetch(`/api/tasks?milestoneId=${milestoneId}`)
+      const url = milestoneId
+        ? `/api/tasks?milestoneId=${milestoneId}`
+        : '/api/tasks'
+      const response = await fetch(url)
       if (!response.ok) throw new Error('Failed to fetch tasks')
       const json = await response.json()
       return json.data
     },
-    enabled: !!milestoneId,
   })
 }
 
@@ -34,6 +36,7 @@ export function useCreateTask() {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['tasks', variables.milestoneId] })
+      queryClient.invalidateQueries({ queryKey: ['tasks', 'all'] })
     },
   })
 }
@@ -57,6 +60,7 @@ export function useUpdateTask() {
     },
     onSuccess: (task) => {
       queryClient.invalidateQueries({ queryKey: ['tasks', task.milestoneId] })
+      queryClient.invalidateQueries({ queryKey: ['tasks', 'all'] })
     },
   })
 }
@@ -75,6 +79,7 @@ export function useDeleteTask() {
     },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['tasks', variables.milestoneId] })
+      queryClient.invalidateQueries({ queryKey: ['tasks', 'all'] })
     },
   })
 }
@@ -98,6 +103,7 @@ export function useUpdateTaskTags() {
     },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['tasks', variables.milestoneId] })
+      queryClient.invalidateQueries({ queryKey: ['tasks', 'all'] })
     },
   })
 }
