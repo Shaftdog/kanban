@@ -25,9 +25,10 @@ interface KanbanColumnProps {
   projectId: string | null
   filters: FilterState
   onMilestoneClick?: (_milestone: any) => void
+  onTaskClick?: (_task: any) => void
 }
 
-export function KanbanColumn({ column, projectId, filters, onMilestoneClick }: KanbanColumnProps) {
+export function KanbanColumn({ column, projectId, filters, onMilestoneClick, onTaskClick }: KanbanColumnProps) {
   const [isAdding, setIsAdding] = useState(false)
   const [newMilestoneName, setNewMilestoneName] = useState('')
 
@@ -146,24 +147,32 @@ export function KanbanColumn({ column, projectId, filters, onMilestoneClick }: K
       return true
     })
     // WBS-based sorting: Project priority (asc) -> Milestone priority (asc) -> Task priority (asc)
+    // Items with priority 0 (no WBS code) go to the bottom at each level
     .sort((a: any, b: any) => {
-      // Sort by project priority first (lower WBS number comes first: 1 before 2)
+      // Sort by project priority first (lower WBS number comes first: 1 before 2, 0 at bottom)
       const projectPriorityA = a.milestone?.project?.priority || 0
       const projectPriorityB = b.milestone?.project?.priority || 0
       if (projectPriorityA !== projectPriorityB) {
+        if (projectPriorityA === 0) return 1  // a goes to bottom
+        if (projectPriorityB === 0) return -1 // b goes to bottom
         return projectPriorityA - projectPriorityB
       }
 
-      // Then by milestone priority (lower WBS number comes first: 1 before 2)
+      // Then by milestone priority (lower WBS number comes first: 1 before 2, 0 at bottom)
       const milestonePriorityA = a.milestone?.priority || 0
       const milestonePriorityB = b.milestone?.priority || 0
       if (milestonePriorityA !== milestonePriorityB) {
+        if (milestonePriorityA === 0) return 1  // a goes to bottom
+        if (milestonePriorityB === 0) return -1 // b goes to bottom
         return milestonePriorityA - milestonePriorityB
       }
 
-      // Finally by task priority (lower WBS number comes first: 1 before 2)
+      // Finally by task priority (lower WBS number comes first: 1 before 2, 0 at bottom)
       const taskPriorityA = a.priority || 0
       const taskPriorityB = b.priority || 0
+      if (taskPriorityA === 0 && taskPriorityB === 0) return 0
+      if (taskPriorityA === 0) return 1  // a goes to bottom
+      if (taskPriorityB === 0) return -1 // b goes to bottom
       return taskPriorityA - taskPriorityB
     })
 
@@ -251,9 +260,7 @@ export function KanbanColumn({ column, projectId, filters, onMilestoneClick }: K
                   <DraggableTaskCard
                     key={task.id}
                     task={task}
-                    onClick={() => {
-                      // Handle task click
-                    }}
+                    onClick={() => onTaskClick?.(task)}
                   />
                 ))
               ) : (

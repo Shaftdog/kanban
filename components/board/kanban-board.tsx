@@ -18,6 +18,7 @@ import { BoardFilters, FilterState } from './board-filters'
 import { AIButton } from '../ai/ai-button'
 import { AIPanel } from '../ai/ai-panel'
 import { ItemDetailModal } from './item-detail-modal'
+import { TaskDetailModal } from './task-detail-modal'
 
 interface KanbanBoardProps {
   projectId?: string | null
@@ -29,7 +30,9 @@ export function KanbanBoard({ projectId }: KanbanBoardProps) {
   const [activeMilestone, setActiveMilestone] = useState<any>(null)
   const [isAIPanelOpen, setIsAIPanelOpen] = useState(false)
   const [selectedMilestone, setSelectedMilestone] = useState<any>(null)
+  const [selectedTask, setSelectedTask] = useState<any>(null)
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false)
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false)
   const [isInitializing, setIsInitializing] = useState(false)
   const [initError, setInitError] = useState<string | null>(null)
   const [filters, setFilters] = useState<FilterState>({
@@ -44,7 +47,13 @@ export function KanbanBoard({ projectId }: KanbanBoardProps) {
 
   const handleMilestoneClick = (milestone: any) => {
     setSelectedMilestone(milestone)
+    setSelectedTask(null) // Clear selected task when opening milestone
     setIsDetailModalOpen(true)
+  }
+
+  const handleTaskClick = (task: any) => {
+    setSelectedTask(task)
+    setIsTaskModalOpen(true)
   }
 
   // Set up sensors for drag detection
@@ -211,6 +220,7 @@ export function KanbanBoard({ projectId }: KanbanBoardProps) {
                 projectId={selectedProject}
                 filters={filters}
                 onMilestoneClick={handleMilestoneClick}
+                onTaskClick={handleTaskClick}
               />
             ))}
           </div>
@@ -233,13 +243,23 @@ export function KanbanBoard({ projectId }: KanbanBoardProps) {
         focusProjectId={selectedProject || undefined}
       />
 
-      {/* Item Detail Modal */}
+      {/* Milestone Detail Modal */}
       <ItemDetailModal
         item={selectedMilestone}
         isOpen={isDetailModalOpen}
         onClose={() => {
           setIsDetailModalOpen(false)
           setSelectedMilestone(null)
+        }}
+      />
+
+      {/* Task Detail Modal */}
+      <TaskDetailModal
+        task={selectedTask}
+        isOpen={isTaskModalOpen}
+        onClose={() => {
+          setIsTaskModalOpen(false)
+          setSelectedTask(null)
         }}
       />
     </DndContext>

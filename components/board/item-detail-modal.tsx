@@ -137,6 +137,13 @@ export function ItemDetailModal({ item, isOpen, onClose }: ItemDetailModalProps)
   const updateTask = useUpdateTask()
   const deleteTask = useDeleteTask()
 
+  // Reset expanded task when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setExpandedTaskId(null)
+    }
+  }, [isOpen])
+
   // Initialize form when item changes
   useEffect(() => {
     if (item) {
@@ -258,6 +265,13 @@ export function ItemDetailModal({ item, isOpen, onClose }: ItemDetailModalProps)
   const handleAddTask = async () => {
     if (!item || !newTaskName.trim()) return
 
+    // Find the BACKLOG column - all new tasks go there
+    const backlogColumn = columns?.find((col: any) => col.key === 'BACKLOG')
+    if (!backlogColumn) {
+      toast.error('Backlog column not found')
+      return
+    }
+
     try {
       await createTask.mutateAsync({
         milestoneId: item.id,
@@ -266,7 +280,7 @@ export function ItemDetailModal({ item, isOpen, onClose }: ItemDetailModalProps)
         value: 'MEDIUM',
         urgency: 'MEDIUM',
         effort: 'SMALL',
-        statusColumnId: item.statusColumnId,
+        statusColumnId: backlogColumn.id,
         priority: newTaskPriority,
       })
       setNewTaskName('')
@@ -352,7 +366,7 @@ export function ItemDetailModal({ item, isOpen, onClose }: ItemDetailModalProps)
                   <span className="px-2 py-0.5 text-xs rounded bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
                     Milestone
                   </span>
-                  {item.priorityScore !== null && (
+                  {typeof item.priorityScore === 'number' && (
                     <span className="px-2 py-0.5 text-xs rounded bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400">
                       Score: {item.priorityScore.toFixed(1)}
                     </span>
@@ -553,6 +567,7 @@ export function ItemDetailModal({ item, isOpen, onClose }: ItemDetailModalProps)
                     {incompleteTasks.map((task: Task) => (
                       <div
                         key={task.id}
+                        id={`task-${task.id}`}
                         className="p-2 rounded-md bg-slate-50 dark:bg-slate-800/50 group"
                       >
                         <div className="flex items-center gap-3">
@@ -669,6 +684,7 @@ export function ItemDetailModal({ item, isOpen, onClose }: ItemDetailModalProps)
                     {completedTasks.map((task: Task) => (
                       <div
                         key={task.id}
+                        id={`task-${task.id}`}
                         className="p-2 rounded-md bg-slate-50 dark:bg-slate-800/50 group opacity-60"
                       >
                         <div className="flex items-center gap-3">
