@@ -12,8 +12,12 @@ import {
   closestCorners,
 } from '@dnd-kit/core'
 import { useColumns, useUpdateMilestone } from '@/lib/hooks'
+import { useUpdateTask } from '@/lib/hooks/use-tasks'
+import { useUpdateProject } from '@/lib/hooks/use-projects'
 import { KanbanColumn } from './kanban-column'
 import { MilestoneCard } from './milestone-card'
+import { TaskCard } from './task-card'
+import { ProjectCard } from './project-card'
 import { BoardFilters, FilterState } from './board-filters'
 import { AIButton } from '../ai/ai-button'
 import { AIPanel } from '../ai/ai-panel'
@@ -28,6 +32,8 @@ export function KanbanBoard({ projectId }: KanbanBoardProps) {
   const { data: columns, isLoading, error } = useColumns()
   const [selectedProject, _setSelectedProject] = useState<string | null>(projectId || null)
   const [activeMilestone, setActiveMilestone] = useState<any>(null)
+  const [activeTask, setActiveTask] = useState<any>(null)
+  const [activeProject, setActiveProject] = useState<any>(null)
   const [isAIPanelOpen, setIsAIPanelOpen] = useState(false)
   const [selectedMilestone, setSelectedMilestone] = useState<any>(null)
   const [selectedTask, setSelectedTask] = useState<any>(null)
@@ -44,6 +50,8 @@ export function KanbanBoard({ projectId }: KanbanBoardProps) {
     itemType: 'all',
   })
   const updateMilestone = useUpdateMilestone()
+  const updateTask = useUpdateTask()
+  const updateProject = useUpdateProject()
 
   const handleMilestoneClick = (milestone: any) => {
     setSelectedMilestone(milestone)
@@ -67,40 +75,88 @@ export function KanbanBoard({ projectId }: KanbanBoardProps) {
 
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event
-    setActiveMilestone(active.data.current?.milestone)
+    const data = active.data.current
+
+    // Determine what type of item is being dragged
+    if (data?.milestone) {
+      setActiveMilestone(data.milestone)
+    } else if (data?.task) {
+      setActiveTask(data.task)
+    } else if (data?.project) {
+      setActiveProject(data.project)
+    }
   }
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event
+
+    // Clear all active items
     setActiveMilestone(null)
+    setActiveTask(null)
+    setActiveProject(null)
 
     if (!over) return
 
-    const milestoneId = active.id as string
+    const itemId = active.id as string
     const newColumnId = over.id as string
-    const milestone = active.data.current?.milestone
+    const data = active.data.current
 
-    if (!milestone || milestone.statusColumnId === newColumnId) {
-      return // No change needed
+    // Handle milestone drag
+    if (data?.milestone) {
+      const milestone = data.milestone
+      if (milestone.statusColumnId === newColumnId) return
+
+      try {
+        await updateMilestone.mutateAsync({
+          id: itemId,
+          data: {
+            projectId: milestone.projectId,
+            statusColumnId: newColumnId,
+          },
+        })
+      } catch (error) {
+        console.error('Failed to update milestone:', error)
+      }
     }
+    // Handle task drag
+    else if (data?.task) {
+      const task = data.task
+      if (task.statusColumnId === newColumnId) return
 
-    // Optimistically update the UI
-    try {
-      await updateMilestone.mutateAsync({
-        id: milestoneId,
-        data: {
-          projectId: milestone.projectId,
-          statusColumnId: newColumnId,
-        },
-      })
-    } catch (error) {
-      console.error('Failed to update milestone:', error)
-      // The mutation will handle rollback via TanStack Query
+      try {
+        await updateTask.mutateAsync({
+          id: itemId,
+          data: {
+            milestoneId: task.milestoneId,
+            statusColumnId: newColumnId,
+          },
+        })
+      } catch (error) {
+        console.error('Failed to update task:', error)
+      }
+    }
+    // Handle project drag
+    else if (data?.project) {
+      const project = data.project
+      if (project.statusColumnId === newColumnId) return
+
+      try {
+        await updateProject.mutateAsync({
+          id: itemId,
+          data: {
+            statusColumnId: newColumnId,
+          },
+        })
+      } catch (error) {
+        console.error('Failed to update project:', error)
+      }
     }
   }
 
   const handleDragCancel = () => {
     setActiveMilestone(null)
+    setActiveTask(null)
+    setActiveProject(null)
   }
 
   if (isLoading) {
@@ -232,6 +288,14 @@ export function KanbanBoard({ projectId }: KanbanBoardProps) {
         {activeMilestone ? (
           <div className="rotate-3 scale-105">
             <MilestoneCard milestone={activeMilestone} />
+          </div>
+        ) : activeTask ? (
+          <div className="rotate-3 scale-105">
+            <TaskCard task={activeTask} />
+          </div>
+        ) : activeProject ? (
+          <div className="rotate-3 scale-105">
+            <ProjectCard project={activeProject} />
           </div>
         ) : null}
       </DragOverlay>
