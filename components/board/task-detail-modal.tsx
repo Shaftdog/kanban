@@ -309,7 +309,7 @@ export function TaskDetailModal({ task, isOpen, onClose }: TaskDetailModalProps)
             <div className="bg-white dark:bg-slate-800 rounded-lg p-6 max-w-md w-full mx-4">
               <h3 className="text-lg font-semibold mb-2">Delete Task</h3>
               <p className="text-slate-600 dark:text-slate-400 mb-4">
-                Are you sure you want to delete "{task.name}"? This action cannot be undone.
+                Are you sure you want to delete &quot;{task.name}&quot;? This action cannot be undone.
               </p>
               <div className="flex justify-end gap-3">
                 <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>

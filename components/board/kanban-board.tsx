@@ -167,7 +167,7 @@ export function KanbanBoard({ projectId }: KanbanBoardProps) {
           Welcome to AI-Powered Kanban!
         </h3>
         <p className="text-slate-600 dark:text-slate-400 mb-6">
-          Let's set up your workspace with default columns and get you started
+          Let&apos;s set up your workspace with default columns and get you started
         </p>
         <button
           onClick={handleInitialize}

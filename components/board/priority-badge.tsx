@@ -20,7 +20,7 @@ export function WBSBadge({ wbsCode, type }: WBSBadgeProps) {
     }
   }
 
-  const getLabel = () => {
+  const _getLabel = () => {
     switch (type) {
       case 'project':
         return 'WBS'
