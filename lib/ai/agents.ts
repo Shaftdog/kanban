@@ -1,4 +1,4 @@
-import { openai, AI_MODEL, AI_TEMPERATURE } from './client';
+import { getOpenAIClient, AI_MODEL, AI_TEMPERATURE } from './client';
 import {
   TRIAGE_AGENT_PROMPT,
   PRIORITIZER_AGENT_PROMPT,
@@ -52,6 +52,7 @@ async function runTriageAgent(
   const blockedItems = identifyBlockedItems(context.boardItems);
   const blockerItems = identifyBlockerItems(context.boardItems);
 
+  const openai = getOpenAIClient();
   const completion = await openai.chat.completions.create({
     model: AI_MODEL,
     temperature: AI_TEMPERATURE,
@@ -92,6 +93,7 @@ async function runPrioritizerAgent(
 ): Promise<AgentResult<PrioritizerOutput>> {
   const startTime = Date.now();
 
+  const openai = getOpenAIClient();
   const completion = await openai.chat.completions.create({
     model: AI_MODEL,
     temperature: AI_TEMPERATURE * 0.8, // Slightly more deterministic
@@ -133,6 +135,7 @@ async function runInsightsAgent(
 ): Promise<AgentResult<InsightsOutput>> {
   const startTime = Date.now();
 
+  const openai = getOpenAIClient();
   const completion = await openai.chat.completions.create({
     model: AI_MODEL,
     temperature: AI_TEMPERATURE * 1.1, // Slightly more creative
