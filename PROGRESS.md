@@ -13,7 +13,7 @@
 ## Status Badges
 
 ![Tests](https://img.shields.io/badge/tests-failing-red)
-![Build](https://img.shields.io/badge/build-not%20configured-lightgrey)
+![Build](https://img.shields.io/badge/build-configured-brightgreen)
 ![Security](https://img.shields.io/badge/security-audited-brightgreen)
 ![Deployment](https://img.shields.io/badge/deployment-not%20configured-lightgrey)
 
