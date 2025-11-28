@@ -107,7 +107,7 @@ export function TaskDetailModal({ task, isOpen, onClose }: TaskDetailModalProps)
     if (!task) return
 
     try {
-      await deleteTask.mutateAsync(task.id)
+      await deleteTask.mutateAsync({ id: task.id, milestoneId: task.milestoneId })
       toast.success('Task deleted successfully')
       onClose()
     } catch (error) {
