@@ -90,6 +90,7 @@ export function MilestoneDialog({ open, onOpenChange, projectId, milestone }: Mi
           value,
           urgency,
           effort,
+          priority: 0,
           statusColumnId,
         })
       }
