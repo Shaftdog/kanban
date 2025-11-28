@@ -63,8 +63,8 @@ export function KanbanColumn({ column, projectId, filters, onMilestoneClick, onT
         if (!matchesName && !matchesDescription) return false
       }
 
-      // Filter by item type
-      if (filters.itemType !== 'all' && filters.itemType !== 'projects') {
+      // Filter by item type - projects are shown only when itemType is 'all'
+      if (filters.itemType !== 'all') {
         return false
       }
 
