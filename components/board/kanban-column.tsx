@@ -195,6 +195,7 @@ export function KanbanColumn({ column, projectId, filters, onMilestoneClick, onT
         value: 'MEDIUM',
         urgency: 'MEDIUM',
         effort: 'MEDIUM',
+        priority: 0,
         statusColumnId: column.id,
       })
       setNewMilestoneName('')
