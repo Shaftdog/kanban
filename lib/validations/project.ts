@@ -4,6 +4,7 @@ export const projectSchema = z.object({
   name: z.string().min(1, 'Project name is required').max(100, 'Name must be 100 characters or less'),
   description: z.string().max(500, 'Description must be 500 characters or less').optional().nullable(),
   status: z.enum(['ACTIVE', 'ARCHIVED']).default('ACTIVE'),
+  statusColumnId: z.string().uuid().optional().nullable(),
   priority: z.number().int().min(0).max(999).default(0),
   sortOrder: z.number().int().nonnegative().default(0),
 })
