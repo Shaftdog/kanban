@@ -288,6 +288,7 @@ export function TaskDetailModal({ task, isOpen, onClose }: TaskDetailModalProps)
             <Label>Tags</Label>
             <TagSelector
               taskId={task.id}
+              milestoneId={task.milestoneId}
               selectedTags={task.tags || []}
             />
           </div>
