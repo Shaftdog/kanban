@@ -41,7 +41,7 @@ export function KanbanColumn({ column, projectId, filters, onMilestoneClick, onT
   // Determine column type
   const isProjectsColumn = column.key === 'PROJECTS'
   const _isMilestonesColumn = column.key === 'MILESTONES'
-  const isBacklogColumn = column.key === 'BACKLOG'
+  const _isBacklogColumn = column.key === 'BACKLOG'
 
   const isLoading = isProjectsColumn
     ? projectsLoading
