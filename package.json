@@ -13,6 +13,8 @@
     "progress": "node scripts/phase-report.js",
     "phase-report": "node scripts/phase-report.js",
     "db:seed": "tsx prisma/seed.ts",
+    "db:migrate": "prisma migrate deploy && npm run db:migrate-data",
+    "db:migrate-data": "tsx scripts/migrate-to-workspace.ts",
     "test": "playwright test",
     "test:headed": "playwright test --headed",
     "test:ui": "playwright test --ui",

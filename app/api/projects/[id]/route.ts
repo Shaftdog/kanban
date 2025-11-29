@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
 import { updateProjectSchema } from '@/lib/validations'
+import { getWorkspaceContext } from '@/lib/workspace'
 
 // GET /api/projects/[id] - Get a single project
 export async function GET(
@@ -10,19 +10,12 @@ export async function GET(
 ) {
   try {
     const { id } = await params
-    const supabase = await createClient()
-    const {
-      data: { session },
-    } = await supabase.auth.getSession()
-
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const { workspaceId } = await getWorkspaceContext()
 
     const project = await prisma.project.findFirst({
       where: {
         id,
-        userId: session.user.id,
+        workspaceId,
       },
       include: {
         milestones: {
@@ -46,6 +39,11 @@ export async function GET(
     return NextResponse.json({ data: project })
   } catch (error) {
     console.error('Error fetching project:', error)
+
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     return NextResponse.json(
       { error: 'Failed to fetch project' },
       { status: 500 }
@@ -60,20 +58,13 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params
-    const supabase = await createClient()
-    const {
-      data: { session },
-    } = await supabase.auth.getSession()
+    const { workspaceId } = await getWorkspaceContext()
 
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    // Verify project belongs to user
+    // Verify project belongs to workspace
     const existingProject = await prisma.project.findFirst({
       where: {
         id,
-        userId: session.user.id,
+        workspaceId,
       },
     })
 
@@ -92,6 +83,10 @@ export async function PATCH(
     return NextResponse.json({ data: project })
   } catch (error) {
     console.error('Error updating project:', error)
+
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
     if (error instanceof Error && error.name === 'ZodError') {
       return NextResponse.json(
@@ -114,20 +109,13 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params
-    const supabase = await createClient()
-    const {
-      data: { session },
-    } = await supabase.auth.getSession()
+    const { workspaceId } = await getWorkspaceContext()
 
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    // Verify project belongs to user
+    // Verify project belongs to workspace
     const existingProject = await prisma.project.findFirst({
       where: {
         id,
-        userId: session.user.id,
+        workspaceId,
       },
     })
 
@@ -142,6 +130,11 @@ export async function DELETE(
     return NextResponse.json({ success: true }, { status: 200 })
   } catch (error) {
     console.error('Error deleting project:', error)
+
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     return NextResponse.json(
       { error: 'Failed to delete project' },
       { status: 500 }

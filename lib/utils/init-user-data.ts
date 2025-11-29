@@ -2,25 +2,26 @@ import { ColumnKey } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 
 /**
- * Initialize default columns for a new user
- * This should be called when a user signs up or on first login
+ * Initialize default columns for a new workspace
+ * This should be called when a workspace is created
  */
-export async function initializeUserColumns(userId: string) {
-  // Check if user already has columns
+export async function initializeUserColumns(userId: string, workspaceId: string) {
+  // Check if workspace already has columns
   const existingColumns = await prisma.column.findFirst({
-    where: { userId },
+    where: { workspaceId },
   })
 
   if (existingColumns) {
-    return // User already has columns
+    return // Workspace already has columns
   }
 
   // Create default Kanban columns
-  console.log(`📋 Creating default columns for user ${userId}...`)
+  console.log(`📋 Creating default columns for workspace ${workspaceId}...`)
 
   const columns = await prisma.$transaction([
     prisma.column.create({
       data: {
+        workspaceId,
         userId,
         name: 'Projects',
         key: ColumnKey.PROJECTS,
@@ -29,6 +30,7 @@ export async function initializeUserColumns(userId: string) {
     }),
     prisma.column.create({
       data: {
+        workspaceId,
         userId,
         name: 'Milestones',
         key: ColumnKey.MILESTONES,
@@ -37,6 +39,7 @@ export async function initializeUserColumns(userId: string) {
     }),
     prisma.column.create({
       data: {
+        workspaceId,
         userId,
         name: 'Backlog',
         key: ColumnKey.BACKLOG,
@@ -45,6 +48,7 @@ export async function initializeUserColumns(userId: string) {
     }),
     prisma.column.create({
       data: {
+        workspaceId,
         userId,
         name: 'Working',
         key: ColumnKey.WORKING,
@@ -53,6 +57,7 @@ export async function initializeUserColumns(userId: string) {
     }),
     prisma.column.create({
       data: {
+        workspaceId,
         userId,
         name: 'Ready for Test',
         key: ColumnKey.READY_TEST,
@@ -61,6 +66,7 @@ export async function initializeUserColumns(userId: string) {
     }),
     prisma.column.create({
       data: {
+        workspaceId,
         userId,
         name: 'Agent Testing',
         key: ColumnKey.AGENT_TESTING,
@@ -69,6 +75,7 @@ export async function initializeUserColumns(userId: string) {
     }),
     prisma.column.create({
       data: {
+        workspaceId,
         userId,
         name: 'Deployed/Testing',
         key: ColumnKey.DEPLOYED_TESTING,
@@ -77,6 +84,7 @@ export async function initializeUserColumns(userId: string) {
     }),
     prisma.column.create({
       data: {
+        workspaceId,
         userId,
         name: 'Completed',
         key: ColumnKey.COMPLETED,
@@ -85,29 +93,30 @@ export async function initializeUserColumns(userId: string) {
     }),
   ])
 
-  console.log(`✅ Created ${columns.length} default columns for user ${userId}`)
+  console.log(`✅ Created ${columns.length} default columns for workspace ${workspaceId}`)
   return columns
 }
 
 /**
- * Initialize default tags for a new user
+ * Initialize default tags for a new workspace
  */
-export async function initializeUserTags(userId: string) {
-  // Check if user already has tags
+export async function initializeUserTags(userId: string, workspaceId: string) {
+  // Check if workspace already has tags
   const existingTags = await prisma.tag.findFirst({
-    where: { userId },
+    where: { workspaceId },
   })
 
   if (existingTags) {
-    return // User already has tags
+    return // Workspace already has tags
   }
 
   // Create default tags
-  console.log(`🏷️  Creating default tags for user ${userId}...`)
+  console.log(`🏷️  Creating default tags for workspace ${workspaceId}...`)
 
   const tags = await prisma.$transaction([
     prisma.tag.create({
       data: {
+        workspaceId,
         userId,
         name: 'Frontend',
         color: '#3b82f6',
@@ -115,6 +124,7 @@ export async function initializeUserTags(userId: string) {
     }),
     prisma.tag.create({
       data: {
+        workspaceId,
         userId,
         name: 'Backend',
         color: '#8b5cf6',
@@ -122,6 +132,7 @@ export async function initializeUserTags(userId: string) {
     }),
     prisma.tag.create({
       data: {
+        workspaceId,
         userId,
         name: 'Bug',
         color: '#ef4444',
@@ -129,6 +140,7 @@ export async function initializeUserTags(userId: string) {
     }),
     prisma.tag.create({
       data: {
+        workspaceId,
         userId,
         name: 'Feature',
         color: '#10b981',
@@ -136,6 +148,7 @@ export async function initializeUserTags(userId: string) {
     }),
     prisma.tag.create({
       data: {
+        workspaceId,
         userId,
         name: 'Urgent',
         color: '#f59e0b',
@@ -143,31 +156,31 @@ export async function initializeUserTags(userId: string) {
     }),
   ])
 
-  console.log(`✅ Created ${tags.length} default tags for user ${userId}`)
+  console.log(`✅ Created ${tags.length} default tags for workspace ${workspaceId}`)
   return tags
 }
 
 /**
- * Create a sample welcome project for new users
+ * Create a sample welcome project for new workspaces
  */
-export async function createWelcomeProject(userId: string) {
-  // Check if user already has projects
+export async function createWelcomeProject(userId: string, workspaceId: string) {
+  // Check if workspace already has projects
   const existingProjects = await prisma.project.findFirst({
-    where: { userId },
+    where: { workspaceId },
   })
 
   if (existingProjects) {
-    return // User already has projects
+    return // Workspace already has projects
   }
 
-  console.log(`📁 Creating welcome project for user ${userId}...`)
+  console.log(`📁 Creating welcome project for workspace ${workspaceId}...`)
 
   // Get the milestones and backlog columns
   const milestonesColumn = await prisma.column.findFirst({
-    where: { userId, key: 'MILESTONES' },
+    where: { workspaceId, key: 'MILESTONES' },
   })
   const backlogColumn = await prisma.column.findFirst({
-    where: { userId, key: 'BACKLOG' },
+    where: { workspaceId, key: 'BACKLOG' },
   })
 
   if (!milestonesColumn || !backlogColumn) {
@@ -178,6 +191,7 @@ export async function createWelcomeProject(userId: string) {
   // Create welcome project
   const project = await prisma.project.create({
     data: {
+      workspaceId,
       userId,
       name: 'Welcome to AI-Powered Kanban! 👋',
       description: 'Get started with your intelligent task management system',
@@ -216,20 +230,20 @@ export async function createWelcomeProject(userId: string) {
     },
   })
 
-  console.log(`✅ Created welcome project for user ${userId}`)
+  console.log(`✅ Created welcome project for workspace ${workspaceId}`)
 }
 
 /**
- * Initialize all default data for a new user
+ * Initialize all default data for a new workspace
  */
-export async function initializeUserData(userId: string) {
+export async function initializeUserData(userId: string, workspaceId: string) {
   try {
-    await initializeUserColumns(userId)
-    await initializeUserTags(userId)
-    await createWelcomeProject(userId)
-    console.log(`✅ User initialization complete for ${userId}`)
+    await initializeUserColumns(userId, workspaceId)
+    await initializeUserTags(userId, workspaceId)
+    await createWelcomeProject(userId, workspaceId)
+    console.log(`✅ Workspace initialization complete for ${workspaceId}`)
   } catch (error) {
-    console.error(`❌ Error initializing user data for ${userId}:`, error)
+    console.error(`❌ Error initializing workspace data for ${workspaceId}:`, error)
     throw error
   }
 }

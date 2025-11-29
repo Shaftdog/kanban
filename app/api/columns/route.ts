@@ -1,22 +1,15 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
+import { getWorkspaceContext } from '@/lib/workspace'
 
-// GET /api/columns - List all columns for the authenticated user
+// GET /api/columns - List all columns for the workspace
 export async function GET() {
   try {
-    const supabase = await createClient()
-    const {
-      data: { session },
-    } = await supabase.auth.getSession()
-
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const { workspaceId } = await getWorkspaceContext()
 
     const columns = await prisma.column.findMany({
       where: {
-        userId: session.user.id,
+        workspaceId,
       },
       orderBy: { sortOrder: 'asc' },
     })
@@ -24,6 +17,11 @@ export async function GET() {
     return NextResponse.json({ data: columns })
   } catch (error) {
     console.error('Error fetching columns:', error)
+
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     return NextResponse.json(
       { error: 'Failed to fetch columns' },
       { status: 500 }

@@ -1,23 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
 import { createTagSchema } from '@/lib/validations'
+import { getWorkspaceContext } from '@/lib/workspace'
 
-// GET /api/tags - List all tags for the authenticated user
+// GET /api/tags - List all tags for the workspace
 export async function GET() {
   try {
-    const supabase = await createClient()
-    const {
-      data: { session },
-    } = await supabase.auth.getSession()
-
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const { workspaceId } = await getWorkspaceContext()
 
     const tags = await prisma.tag.findMany({
       where: {
-        userId: session.user.id,
+        workspaceId,
       },
       orderBy: { name: 'asc' },
     })
@@ -25,6 +18,11 @@ export async function GET() {
     return NextResponse.json({ data: tags })
   } catch (error) {
     console.error('Error fetching tags:', error)
+
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     return NextResponse.json(
       { error: 'Failed to fetch tags' },
       { status: 500 }
@@ -35,14 +33,7 @@ export async function GET() {
 // POST /api/tags - Create a new tag
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
-    const {
-      data: { session },
-    } = await supabase.auth.getSession()
-
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const { workspaceId, userId } = await getWorkspaceContext()
 
     const body = await request.json()
     const validatedData = createTagSchema.parse(body)
@@ -50,13 +41,18 @@ export async function POST(request: NextRequest) {
     const tag = await prisma.tag.create({
       data: {
         ...validatedData,
-        userId: session.user.id,
+        workspaceId,
+        userId,
       },
     })
 
     return NextResponse.json({ data: tag }, { status: 201 })
   } catch (error) {
     console.error('Error creating tag:', error)
+
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
     if (error instanceof Error && error.name === 'ZodError') {
       return NextResponse.json(

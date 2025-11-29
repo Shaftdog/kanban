@@ -18,17 +18,79 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  projects          Project[]
-  columns           Column[]
-  tags              Tag[]
-  aiRecommendations AIRecommendation[]
+  projects              Project[]
+  columns               Column[]
+  tags                  Tag[]
+  aiRecommendations     AIRecommendation[]
+  workspaceMemberships  WorkspaceMember[]
+  sentInvitations       WorkspaceInvitation[] @relation("InvitedBy")
 
   @@map("users")
+}
+
+// Workspace: Shared container for team collaboration
+model Workspace {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members       WorkspaceMember[]
+  invitations   WorkspaceInvitation[]
+  projects      Project[]
+  columns       Column[]
+  tags          Tag[]
+  aiRecommendations AIRecommendation[]
+
+  @@map("workspaces")
+}
+
+// WorkspaceMember: Junction table for User ↔ Workspace membership
+model WorkspaceMember {
+  id          String   @id @default(uuid())
+  workspaceId String
+  userId      String
+  role        MemberRole @default(MEMBER)
+  joinedAt    DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@index([userId])
+  @@index([workspaceId])
+  @@map("workspace_members")
+}
+
+enum MemberRole {
+  OWNER
+  MEMBER
+}
+
+// WorkspaceInvitation: Email-based invitations to join workspace
+model WorkspaceInvitation {
+  id          String   @id @default(uuid())
+  workspaceId String
+  email       String
+  invitedById String
+  token       String   @unique
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  createdAt   DateTime @default(now())
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  invitedBy   User      @relation("InvitedBy", fields: [invitedById], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([email])
+  @@index([token])
+  @@map("workspace_invitations")
 }
 
 // Project: Top-level container
 model Project {
   id             String        @id @default(uuid())
+  workspaceId    String
   userId         String
   name           String
   description    String?
@@ -40,13 +102,15 @@ model Project {
   updatedAt      DateTime      @updatedAt
   archivedAt     DateTime?
 
+  workspace    Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   statusColumn Column?     @relation("ProjectColumn", fields: [statusColumnId], references: [id])
   milestones   Milestone[]
 
+  @@index([workspaceId, status])
+  @@index([workspaceId, sortOrder])
+  @@index([workspaceId, priority])
   @@index([userId, status])
-  @@index([userId, sortOrder])
-  @@index([userId, priority])
   @@index([statusColumnId])
   @@map("projects")
 }
@@ -131,21 +195,24 @@ enum Effort {
 
 // Column: Kanban board columns
 model Column {
-  id        String    @id @default(uuid())
-  userId    String
-  name      String
-  key       ColumnKey
-  sortOrder Int       @default(0)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id          String    @id @default(uuid())
+  workspaceId String
+  userId      String
+  name        String
+  key         ColumnKey
+  sortOrder   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
+  workspace  Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   projects   Project[]   @relation("ProjectColumn")
   milestones Milestone[] @relation("MilestoneColumn")
   tasks      Task[]      @relation("TaskColumn")
 
-  @@unique([userId, key])
-  @@index([userId, sortOrder])
+  @@unique([workspaceId, key])
+  @@index([workspaceId, sortOrder])
+  @@index([userId])
   @@map("columns")
 }
 
@@ -162,17 +229,20 @@ enum ColumnKey {
 
 // Tag: Labels for categorization
 model Tag {
-  id        String   @id @default(uuid())
-  userId    String
-  name      String
-  color     String   @default("#3b82f6")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(uuid())
+  workspaceId String
+  userId      String
+  name        String
+  color       String   @default("#3b82f6")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  taskTags TaskTag[]
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  taskTags  TaskTag[]
 
-  @@unique([userId, name])
+  @@unique([workspaceId, name])
+  @@index([workspaceId])
   @@index([userId])
   @@map("tags")
 }
@@ -194,6 +264,7 @@ model TaskTag {
 // AIRecommendation: Audit log for AI analysis
 model AIRecommendation {
   id             String   @id @default(uuid())
+  workspaceId    String
   userId         String
   inputSnapshot  Json
   topTasks       Json
@@ -204,8 +275,10 @@ model AIRecommendation {
   durationMs     Int
   createdAt      DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([workspaceId, createdAt])
   @@index([userId, createdAt])
   @@map("ai_recommendations")
 }
