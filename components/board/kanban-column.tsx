@@ -45,9 +45,7 @@ export function KanbanColumn({ column, projectId, filters, onMilestoneClick, onT
 
   const isLoading = isProjectsColumn
     ? projectsLoading
-    : isBacklogColumn
-    ? tasksLoading
-    : milestonesLoading
+    : milestonesLoading || tasksLoading
 
   // Apply filters for projects
   const projects = (allProjects || [])
@@ -110,7 +108,7 @@ export function KanbanColumn({ column, projectId, filters, onMilestoneClick, onT
     })
     .sort((a: any, b: any) => a.priority - b.priority) // Sort by WBS priority ascending (1, 2, 3...)
 
-  // Apply filters and priority sorting for tasks (BACKLOG column)
+  // Apply filters and priority sorting for tasks (all columns)
   const tasks = (allTasks || [])
     .filter((t: any) => {
       // Filter by column
@@ -181,7 +179,8 @@ export function KanbanColumn({ column, projectId, filters, onMilestoneClick, onT
   })
 
   // Use appropriate items for drag and drop context based on column type
-  const items = isProjectsColumn ? projects : isBacklogColumn ? tasks : milestones
+  // For non-Projects columns, combine milestones and tasks
+  const items = isProjectsColumn ? projects : [...milestones, ...tasks]
   const itemIds = items.map((item: any) => item.id)
 
   const handleAddMilestone = async () => {
@@ -255,24 +254,24 @@ export function KanbanColumn({ column, projectId, filters, onMilestoneClick, onT
                     }}
                   />
                 ))
-              ) : isBacklogColumn ? (
-                // Show tasks in BACKLOG column
-                tasks.map((task: any) => (
-                  <DraggableTaskCard
-                    key={task.id}
-                    task={task}
-                    onClick={() => onTaskClick?.(task)}
-                  />
-                ))
               ) : (
-                // Show milestones in MILESTONES and workflow columns
-                milestones.map((milestone: any) => (
-                  <DraggableMilestoneCard
-                    key={milestone.id}
-                    milestone={milestone}
-                    onClick={() => onMilestoneClick?.(milestone)}
-                  />
-                ))
+                // Show both milestones and tasks in all other columns
+                <>
+                  {milestones.map((milestone: any) => (
+                    <DraggableMilestoneCard
+                      key={milestone.id}
+                      milestone={milestone}
+                      onClick={() => onMilestoneClick?.(milestone)}
+                    />
+                  ))}
+                  {tasks.map((task: any) => (
+                    <DraggableTaskCard
+                      key={task.id}
+                      task={task}
+                      onClick={() => onTaskClick?.(task)}
+                    />
+                  ))}
+                </>
               )
             ) : (
             <div className="text-center py-8">
