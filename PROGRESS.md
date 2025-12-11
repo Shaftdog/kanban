@@ -497,5 +497,5 @@ ANALYZE=true npm run build
 
 ---
 
-**Last Updated:** 2025-11-29 (auto-updated)
+**Last Updated:** 2025-12-11 (auto-updated)
 **Auto-update Status:** ✅ Active (updates on every commit)
