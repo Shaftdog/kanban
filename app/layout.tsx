@@ -5,6 +5,9 @@ import { QueryProvider } from '@/lib/providers/query-provider'
 import { Toaster } from '@/components/ui/toaster'
 import { TooltipProvider } from '@/components/ui/tooltip'
 
+// Force dynamic rendering for all routes to avoid build-time env var issues
+export const dynamic = 'force-dynamic'
+
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
